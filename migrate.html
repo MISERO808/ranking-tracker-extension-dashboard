@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Tracker - Data Migration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #191414;
+      color: white;
+      line-height: 1.6;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .title {
+      color: #1DB954;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: #282828;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .step {
+      margin-bottom: 15px;
+      padding: 15px;
+      background: #3E3E3E;
+      border-radius: 6px;
+    }
+    .step-number {
+      background: #1DB954;
+      color: black;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .button {
+      background: #1DB954;
+      color: black;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .button:hover {
+      background: #1ed760;
+    }
+    .button:disabled {
+      background: #535353;
+      color: #b3b3b3;
+      cursor: not-allowed;
+    }
+    .stats {
+      background: #1DB954;
+      color: black;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .error {
+      background: #e22134;
+      color: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .success {
+      background: #1DB954;
+      color: black;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    code {
+      background: #000;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      color: #1DB954;
+    }
+    .log {
+      background: #000;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin: 10px 0;
+    }
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: #535353;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #1DB954;
+      transition: width 0.3s;
+      width: 0%;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="title">🎯 Spotify Tracker - Data Migration</h1>
+    <p>Transfer your extension data to the new dashboard</p>
+  </div>
+
+  <div class="card">
+    <h2>Migration Steps</h2>
+    <div class="step">
+      <span class="step-number">1</span>
+      <strong>Check Extension Data:</strong> We'll scan your browser's extension storage for existing ranking data.
+    </div>
+    <div class="step">
+      <span class="step-number">2</span>
+      <strong>Transform Format:</strong> Convert your Chrome storage data to the new Redis format.
+    </div>
+    <div class="step">
+      <span class="step-number">3</span>
+      <strong>Upload to Dashboard:</strong> Send all data to your deployed dashboard.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Start Migration</h2>
+    <p>Click the button below to begin migrating your data:</p>
+    <button id="migrate-btn" class="button">Start Migration</button>
+    <div class="progress" id="progress-container" style="display: none;">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div id="status"></div>
+    <div id="log" class="log" style="display: none;"></div>
+  </div>
+
+  <script>
+    class DataMigrator {
+      constructor() {
+        this.dashboardUrl = 'https://ranking-tracker-extension-dashboard.vercel.app';
+        this.migrationStats = {
+          playlists: 0,
+          rankings: 0,
+          errors: 0
+        };
+        this.logElement = document.getElementById('log');
+        this.statusElement = document.getElementById('status');
+        this.progressBar = document.getElementById('progress-bar');
+        this.progressContainer = document.getElementById('progress-container');
+      }
+
+      log(message, type = 'info') {
+        console.log(message);
+        const timestamp = new Date().toLocaleTimeString();
+        this.logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        this.logElement.scrollTop = this.logElement.scrollHeight;
+        this.logElement.style.display = 'block';
+      }
+
+      updateProgress(percent) {
+        this.progressBar.style.width = percent + '%';
+      }
+
+      async migrate() {
+        try {
+          const migrateBtn = document.getElementById('migrate-btn');
+          migrateBtn.disabled = true;
+          migrateBtn.textContent = 'Migrating...';
+          this.progressContainer.style.display = 'block';
+
+          this.log('🚀 Starting data migration...');
+          this.updateProgress(10);
+          
+          // Get all data from Chrome storage
+          const data = await this.getChromeStorageData();
+          this.updateProgress(20);
+          
+          if (!data) {
+            throw new Error('No extension data found');
+          }
+
+          this.log(`📊 Found extension data:`);
+          this.log(`- ${Object.keys(data.watchedPlaylists || {}).length} playlists`);
+          this.log(`- ${(data.rankingHistory || []).length} rankings`);
+          this.log(`- ${(data.starredKeywords || []).length} starred keywords`);
+
+          // Transform and migrate data
+          this.updateProgress(40);
+          await this.migratePlaylistData(data);
+          this.updateProgress(100);
+          
+          const successMsg = `✅ Migration completed! Stats: ${this.migrationStats.playlists} playlists, ${this.migrationStats.rankings} rankings, ${this.migrationStats.errors} errors`;
+          this.log(successMsg);
+          
+          this.statusElement.innerHTML = `<div class="success">${successMsg}</div>`;
+          
+          migrateBtn.textContent = 'Migration Complete!';
+          
+        } catch (error) {
+          this.log(`❌ Migration failed: ${error.message}`, 'error');
+          this.statusElement.innerHTML = `<div class="error">Migration failed: ${error.message}</div>`;
+          
+          const migrateBtn = document.getElementById('migrate-btn');
+          migrateBtn.disabled = false;
+          migrateBtn.textContent = 'Retry Migration';
+        }
+      }
+
+      async getChromeStorageData() {
+        return new Promise((resolve, reject) => {
+          if (typeof chrome === 'undefined' || !chrome.storage) {
+            reject(new Error('Chrome extension API not available. Make sure you\'re running this in an extension context.'));
+            return;
+          }
+
+          chrome.storage.local.get(['rankingHistory', 'watchedPlaylists', 'starredKeywords'], (result) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+            resolve(result);
+          });
+        });
+      }
+
+      async migratePlaylistData(extensionData) {
+        const { rankingHistory = [], watchedPlaylists = {} } = extensionData;
+        
+        if (rankingHistory.length === 0) {
+          this.log('⚠️  No ranking data to migrate');
+          return;
+        }
+        
+        // Group rankings by playlist
+        const playlistGroups = {};
+        
+        rankingHistory.forEach(ranking => {
+          const playlistId = ranking.playlistId;
+          if (!playlistGroups[playlistId]) {
+            playlistGroups[playlistId] = {
+              rankings: [],
+              playlistInfo: watchedPlaylists[playlistId] || null
+            };
+          }
+          playlistGroups[playlistId].rankings.push(ranking);
+        });
+
+        const totalPlaylists = Object.keys(playlistGroups).length;
+        let currentPlaylist = 0;
+
+        // Migrate each playlist
+        for (const [playlistId, group] of Object.entries(playlistGroups)) {
+          try {
+            await this.migratePlaylist(playlistId, group);
+            this.migrationStats.playlists++;
+            currentPlaylist++;
+            
+            const progress = 40 + (currentPlaylist / totalPlaylists) * 60;
+            this.updateProgress(progress);
+            
+          } catch (error) {
+            this.log(`❌ Failed to migrate playlist ${playlistId}: ${error.message}`);
+            this.migrationStats.errors++;
+          }
+        }
+      }
+
+      async migratePlaylist(playlistId, group) {
+        const { rankings, playlistInfo } = group;
+        
+        // Transform rankings to dashboard format
+        const keywordRankings = this.transformRankings(rankings);
+        
+        // Create playlist data in dashboard format
+        const playlistData = {
+          id: playlistId,
+          name: playlistInfo?.name || `Playlist ${playlistId.substring(0, 8)}...`,
+          image: null,
+          keywords: keywordRankings,
+          lastUpdated: rankings.length > 0 
+            ? new Date(Math.max(...rankings.map(r => new Date(r.timestamp)))).toISOString()
+            : new Date().toISOString()
+        };
+
+        this.log(`📤 Migrating: ${playlistData.name} (${keywordRankings.length} keywords)`);
+
+        // Send to dashboard API
+        const response = await fetch(`${this.dashboardUrl}/api/playlists`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(playlistData)
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        this.migrationStats.rankings += rankings.length;
+      }
+
+      transformRankings(rankings) {
+        // Get the latest ranking for each keyword+territory combination
+        const latestRankings = new Map();
+        
+        rankings.forEach(ranking => {
+          // Fix unknown territories to DE
+          const territory = (ranking.territory === 'unknown' || !ranking.territory) ? 'DE' : ranking.territory;
+          const key = `${ranking.keyword}-${territory}`;
+          const existing = latestRankings.get(key);
+          
+          const fixedRanking = { ...ranking, territory };
+          
+          if (!existing || new Date(ranking.timestamp) > new Date(existing.timestamp)) {
+            latestRankings.set(key, fixedRanking);
+          }
+        });
+
+        // Transform to dashboard format
+        return Array.from(latestRankings.values()).map(ranking => ({
+          keyword: ranking.keyword,
+          position: ranking.position,
+          territory: ranking.territory.toLowerCase(),
+          timestamp: ranking.timestamp,
+          trend: this.calculateTrend(rankings, ranking.keyword, ranking.territory)
+        }));
+      }
+
+      calculateTrend(rankings, keyword, territory) {
+        // Get all rankings for this keyword+territory, sorted by time
+        // Also fix unknown territories to DE for trend calculation
+        const keywordRankings = rankings
+          .map(r => ({
+            ...r,
+            territory: (r.territory === 'unknown' || !r.territory) ? 'DE' : r.territory
+          }))
+          .filter(r => r.keyword === keyword && r.territory === territory)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        if (keywordRankings.length < 2) return 'stable';
+
+        const latest = keywordRankings[keywordRankings.length - 1];
+        const previous = keywordRankings[keywordRankings.length - 2];
+
+        if (latest.position < previous.position) return 'up';
+        if (latest.position > previous.position) return 'down';
+        return 'stable';
+      }
+    }
+
+    // Initialize migration tool
+    document.addEventListener('DOMContentLoaded', () => {
+      const migrator = new DataMigrator();
+      
+      document.getElementById('migrate-btn').addEventListener('click', () => {
+        migrator.migrate();
+      });
+    });
+  </script>
+</body>
+</html>
