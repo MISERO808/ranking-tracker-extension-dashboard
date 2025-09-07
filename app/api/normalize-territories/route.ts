@@ -37,7 +37,7 @@ export async function GET() {
       let normalizedInThisPlaylist = 0;
       
       // Normalize all territories to lowercase
-      const normalizedKeywords = playlist.keywords.map(keyword => {
+      const normalizedKeywords = playlist.keywords.map((keyword: any) => {
         totalProcessed++;
         const originalTerritory = keyword.territory;
         
