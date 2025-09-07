@@ -41,6 +41,18 @@ export async function POST(request: Request) {
     }
 
     return runMigration();
+  } catch (error) {
+    console.error('❌ POST Migration failed:', error);
+    const response = NextResponse.json({ 
+      error: 'Migration failed', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
+    
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
+  }
 }
 
 async function runMigration() {
