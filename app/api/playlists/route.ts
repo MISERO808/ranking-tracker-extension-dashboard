@@ -43,9 +43,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    console.log('POST /api/playlists - Saving playlist...');
+    const requestTime = new Date().toISOString();
+    console.log(`🚀 POST /api/playlists - NEW REQUEST at ${requestTime}`);
+    
+    // Log request headers for debugging
+    console.log('Headers:', Object.fromEntries(request.headers.entries()));
+    
     const playlistData: PlaylistData = await request.json();
-    console.log(`POST /api/playlists - Playlist: ${playlistData.name} (${playlistData.keywords.length} keywords)`);
+    console.log(`📝 POST /api/playlists - Playlist: ${playlistData.name} (${playlistData.keywords.length} keywords)`);
+    console.log(`📅 Request timestamp: ${requestTime}`);
     
     // DEBUG: Log keyword timestamps to verify historical data
     const keywordsByDate = playlistData.keywords.reduce((acc, k) => {
@@ -54,7 +60,16 @@ export async function POST(request: Request) {
       acc[date]++;
       return acc;
     }, {} as { [date: string]: number });
-    console.log('POST /api/playlists - Keywords by date:', keywordsByDate);
+    console.log('📊 POST /api/playlists - Keywords by date:', keywordsByDate);
+    
+    // Log the most recent keywords in this batch
+    const sortedKeywords = playlistData.keywords.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    console.log('🔍 Most recent keywords in this request:');
+    sortedKeywords.slice(0, 3).forEach((k, i) => {
+      console.log(`  ${i + 1}. "${k.keyword}" at ${k.timestamp} (${new Date(k.timestamp).toLocaleString()})`);
+    });
     
     await savePlaylistData(playlistData.id, playlistData);
     
