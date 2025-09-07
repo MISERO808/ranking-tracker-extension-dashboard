@@ -7,6 +7,12 @@ interface KeywordTableProps {
   onKeywordSelect: (keyword: string, territory: string) => void;
   selectedKeyword: string | null;
   selectedTerritory: string | null;
+  selectedCountryFilter?: string;
+}
+
+interface DeduplicatedKeyword extends KeywordRanking {
+  territories: string[];
+  allRankings: KeywordRanking[];
 }
 
 const getTrendIcon = (trend?: 'up' | 'down' | 'stable') => {
@@ -39,7 +45,8 @@ export default function KeywordTable({
   keywords, 
   onKeywordSelect, 
   selectedKeyword, 
-  selectedTerritory 
+  selectedTerritory,
+  selectedCountryFilter
 }: KeywordTableProps) {
   if (keywords.length === 0) {
     return (
@@ -52,13 +59,45 @@ export default function KeywordTable({
     );
   }
 
-  // Sort keywords by position (best first)
-  const sortedKeywords = [...keywords].sort((a, b) => a.position - b.position);
+  // Group keywords by keyword text, keeping only the best position for each
+  const keywordGroups = keywords.reduce((acc, ranking) => {
+    const key = ranking.keyword;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(ranking);
+    return acc;
+  }, {} as { [keyword: string]: KeywordRanking[] });
+
+  // For each keyword, find the best position across all territories
+  const deduplicatedKeywords: DeduplicatedKeyword[] = Object.entries(keywordGroups).map(([keywordText, rankings]) => {
+    // Find the best position (lowest number)
+    const bestRanking = rankings.reduce((best: KeywordRanking, current: KeywordRanking) => 
+      current.position < best.position ? current : best
+    );
+    
+    // Get all territories where this keyword appears
+    const territories = rankings.map((r: KeywordRanking) => r.territory);
+    
+    return {
+      ...bestRanking,
+      territories, // Add array of all territories
+      allRankings: rankings // Keep all rankings for territory filtering
+    };
+  });
+
+  // Filter by selected country if provided
+  const filteredKeywords = selectedCountryFilter 
+    ? deduplicatedKeywords.filter((k: DeduplicatedKeyword) => k.territories.includes(selectedCountryFilter.toLowerCase()))
+    : deduplicatedKeywords;
+
+  // Sort by position (best first)
+  const sortedKeywords = filteredKeywords.sort((a: DeduplicatedKeyword, b: DeduplicatedKeyword) => a.position - b.position);
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <h2 className="text-xl font-semibold mb-4">
-        Keyword Rankings ({keywords.length})
+        Keyword Rankings ({filteredKeywords.length} unique keywords)
       </h2>
       
       <div className="overflow-x-auto">
@@ -73,7 +112,7 @@ export default function KeywordTable({
             </tr>
           </thead>
           <tbody>
-            {sortedKeywords.map((keyword, index) => {
+            {sortedKeywords.map((keyword: DeduplicatedKeyword) => {
               const isSelected = selectedKeyword === keyword.keyword && 
                                selectedTerritory === keyword.territory;
               
@@ -103,10 +142,14 @@ export default function KeywordTable({
                   
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      <span>{getTerritoryFlag(keyword.territory)}</span>
-                      <span className="text-sm text-spotify-gray">
-                        {keyword.territory.toUpperCase()}
-                      </span>
+                      {keyword.territories.map((territory: string) => (
+                        <span key={territory} className="flex items-center gap-1">
+                          <span>{getTerritoryFlag(territory)}</span>
+                          <span className="text-sm text-spotify-gray">
+                            {territory.toUpperCase()}
+                          </span>
+                        </span>
+                      ))}
                     </div>
                   </td>
                   

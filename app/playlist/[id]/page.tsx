@@ -16,6 +16,7 @@ export default function PlaylistDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchPlaylist();
@@ -98,7 +99,27 @@ export default function PlaylistDetail() {
                 <span>Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}</span>
               </div>
               
-              {/* Territories */}
+              {/* Country Filter Dropdown */}
+              <div className="mt-4">
+                <label htmlFor="country-filter" className="block text-sm font-medium text-spotify-gray mb-2">
+                  Filter by Country
+                </label>
+                <select 
+                  id="country-filter"
+                  value={selectedCountryFilter}
+                  onChange={(e) => setSelectedCountryFilter(e.target.value)}
+                  className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-spotify-green"
+                >
+                  <option value="all">All Countries</option>
+                  {Array.from(new Set(playlist.keywords.map(k => k.territory))).sort().map(territory => (
+                    <option key={territory} value={territory}>
+                      {territory.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Territories Display */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {Array.from(new Set(playlist.keywords.map(k => k.territory))).map(territory => (
                   <span 
@@ -125,6 +146,7 @@ export default function PlaylistDetail() {
               }}
               selectedKeyword={selectedKeyword}
               selectedTerritory={selectedTerritory}
+              selectedCountryFilter={selectedCountryFilter === 'all' ? undefined : selectedCountryFilter}
             />
           </div>
 
