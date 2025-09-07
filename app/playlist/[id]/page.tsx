@@ -17,6 +17,31 @@ export default function PlaylistDetail() {
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
+  const [starredKeywords, setStarredKeywords] = useState<string[]>([]);
+  
+  // Update selected territory when country filter changes
+  useEffect(() => {
+    if (selectedCountryFilter !== 'all') {
+      setSelectedTerritory(selectedCountryFilter);
+    }
+  }, [selectedCountryFilter]);
+  
+  // Load starred keywords from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(`starred-keywords-${playlistId}`);
+    if (stored) {
+      setStarredKeywords(JSON.parse(stored));
+    }
+  }, [playlistId]);
+  
+  const toggleStar = (keyword: string) => {
+    const newStarred = starredKeywords.includes(keyword)
+      ? starredKeywords.filter(k => k !== keyword)
+      : [...starredKeywords, keyword];
+    
+    setStarredKeywords(newStarred);
+    localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
+  };
 
   useEffect(() => {
     fetchPlaylist();
@@ -145,8 +170,9 @@ export default function PlaylistDetail() {
                 setSelectedTerritory(territory);
               }}
               selectedKeyword={selectedKeyword}
-              selectedTerritory={selectedTerritory}
               selectedCountryFilter={selectedCountryFilter === 'all' ? undefined : selectedCountryFilter}
+              starredKeywords={starredKeywords}
+              onToggleStar={toggleStar}
             />
           </div>
 
