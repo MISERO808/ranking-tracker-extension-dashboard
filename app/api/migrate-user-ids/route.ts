@@ -1,14 +1,50 @@
 import { NextResponse } from 'next/server';
 import { getRedisClient } from '@/lib/redis';
 
+// Add CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, { status: 200, headers: corsHeaders });
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const secret = url.searchParams.get('secret');
+  
+  if (secret !== process.env.MIGRATION_SECRET) {
+    const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
+  }
+
+  return runMigration();
+}
+
 export async function POST(request: Request) {
   try {
     const { secret } = await request.json();
     
     // Simple security check - you can set this in your Vercel environment
     if (secret !== process.env.MIGRATION_SECRET) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      return response;
     }
+
+    return runMigration();
+}
+
+async function runMigration() {
+  try {
 
     const redis = await getRedisClient();
     
@@ -102,12 +138,21 @@ export async function POST(request: Request) {
     
     console.log('🎉 Migration completed:', result);
     
-    return NextResponse.json(result);
+    const response = NextResponse.json(result);
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (error) {
     console.error('❌ Migration failed:', error);
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       error: 'Migration failed', 
       details: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
+    
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   }
 }
