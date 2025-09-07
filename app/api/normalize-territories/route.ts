@@ -80,9 +80,35 @@ export async function GET() {
         keywords: normalizedKeywords
       };
       
+      // EXACT TIMESTAMP DEDUPLICATION - Remove entries with identical timestamp, keyword, position, territory
+      const uniqueKeywords: any[] = [];
+      const seenExactEntries = new Set<string>();
+      let duplicatesRemoved = 0;
+      
+      normalizedKeywords.forEach((keyword: any) => {
+        // Create EXACT signature including timestamp
+        const exactSignature = `${keyword.keyword.toLowerCase().trim()}-${keyword.territory.toLowerCase()}-${keyword.position}-${keyword.timestamp}`;
+        
+        if (seenExactEntries.has(exactSignature)) {
+          console.log(`  🎯 EXACT TIMESTAMP DUPLICATE: "${keyword.keyword}" #${keyword.position} at ${keyword.timestamp}`);
+          duplicatesRemoved++;
+        } else {
+          // First time seeing this exact combination
+          seenExactEntries.add(exactSignature);
+          uniqueKeywords.push(keyword);
+        }
+      });
+      
+      console.log(`  🧹 Removed ${duplicatesRemoved} exact timestamp duplicates`);
+      
+      const finalPlaylist = {
+        ...playlist,
+        keywords: uniqueKeywords
+      };
+      
       // Save back to Redis
-      await redis.hSet(key, 'data', JSON.stringify(updatedPlaylist));
-      console.log(`✅ Updated playlist: ${playlist.name} (${normalizedInThisPlaylist} territories normalized)`);
+      await redis.hSet(key, 'data', JSON.stringify(finalPlaylist));
+      console.log(`✅ Updated playlist: ${playlist.name} (${normalizedInThisPlaylist} territories normalized, ${duplicatesRemoved} duplicates removed)`);
     }
     
     console.log(`\n🎉 TERRITORY NORMALIZATION COMPLETE!`);
