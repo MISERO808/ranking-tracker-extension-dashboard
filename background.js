@@ -71,12 +71,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function handleNewRankings(rankings) {
   console.log('[Background] Processing', rankings.length, 'new rankings');
   
-  // Get settings
-  const { autoSync = false, backendUrl } = await chrome.storage.sync.get(['autoSync', 'backendUrl']);
+  // Get settings - FORCE enable auto-sync for real-time sync
+  let { autoSync = false, backendUrl } = await chrome.storage.sync.get(['autoSync', 'backendUrl']);
+  
+  // Enable auto-sync and set correct backend URL if not configured
+  if (!autoSync || !backendUrl || backendUrl.includes('your-backend')) {
+    console.log('[Background] Enabling auto-sync and setting correct backend URL...');
+    autoSync = true;
+    backendUrl = 'https://ranking-tracker-extension-dashboard.vercel.app';
+    
+    await chrome.storage.sync.set({
+      autoSync: true,
+      backendUrl: backendUrl
+    });
+  }
   
   if (autoSync && backendUrl) {
-    console.log('[Background] Auto-syncing to backend...');
-    syncToBackend(rankings, backendUrl);
+    console.log('[Background] 🚀 Auto-syncing to dashboard:', backendUrl);
+    await syncToBackend(rankings, backendUrl);
+  } else {
+    console.log('[Background] ⚠️ Auto-sync disabled or no backend URL');
   }
 }
 
@@ -84,23 +98,75 @@ async function syncToBackend(rankings, backendUrl) {
   try {
     const { tokens = {} } = await chrome.storage.local.get('tokens');
     
-    const response = await fetch(`${backendUrl}/api/rankings/bulk`, {
+    // Convert rankings to playlist format expected by dashboard
+    const playlistData = await buildPlaylistData(rankings);
+    
+    console.log('[Background] Syncing playlist data:', {
+      name: playlistData.name,
+      keywordCount: playlistData.keywords.length,
+      url: `${backendUrl}/api/playlists`
+    });
+    
+    const response = await fetch(`${backendUrl}/api/playlists`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${tokens.accessToken || ''}`
       },
-      body: JSON.stringify({ rankings })
+      body: JSON.stringify(playlistData)
     });
     
     if (response.ok) {
-      console.log('[Background] Sync successful');
+      console.log('[Background] ✅ Sync successful to dashboard!');
     } else {
-      console.error('[Background] Sync failed:', response.status);
+      console.error('[Background] ❌ Sync failed:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('[Background] Error details:', errorText);
     }
   } catch (error) {
-    console.error('[Background] Sync error:', error);
+    console.error('[Background] ❌ Sync error:', error);
   }
+}
+
+async function buildPlaylistData(rankings) {
+  // Get all ranking history to build complete playlist data
+  const { rankingHistory = [], watchedPlaylists = {} } = await chrome.storage.local.get(['rankingHistory', 'watchedPlaylists']);
+  
+  // Group rankings by playlist
+  const playlistGroups = {};
+  
+  // Add both new rankings and existing history
+  [...rankingHistory, ...rankings].forEach(ranking => {
+    if (!playlistGroups[ranking.playlistId]) {
+      playlistGroups[ranking.playlistId] = {
+        rankings: [],
+        playlist: ranking
+      };
+    }
+    playlistGroups[ranking.playlistId].rankings.push(ranking);
+  });
+  
+  // Convert to dashboard format - send the main playlist (first one)
+  const mainPlaylistId = Object.keys(playlistGroups)[0];
+  if (!mainPlaylistId) return null;
+  
+  const mainPlaylist = playlistGroups[mainPlaylistId];
+  const watchedPlaylist = watchedPlaylists[mainPlaylistId];
+  
+  return {
+    id: mainPlaylistId,
+    name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
+    image: mainPlaylist.playlist.playlistImage || '',
+    keywords: mainPlaylist.rankings.map(ranking => ({
+      keyword: ranking.keyword,
+      position: ranking.position,
+      territory: ranking.territory || 'de',
+      timestamp: ranking.timestamp,
+      userId: ranking.userId,
+      sessionId: ranking.sessionId
+    })),
+    lastUpdated: new Date().toISOString()
+  };
 }
 
 // Listen for tab updates to detect Spotify navigation
@@ -124,10 +190,10 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('[Background] Extension installed');
     
-    // Set default settings
+    // Set default settings - ENABLE AUTO-SYNC by default
     chrome.storage.sync.set({
-      autoSync: false,
-      backendUrl: 'https://your-backend.vercel.app'
+      autoSync: true,
+      backendUrl: 'https://ranking-tracker-extension-dashboard.vercel.app'
     });
     
     // Create a default icon if you haven't added one

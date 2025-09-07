@@ -91,6 +91,52 @@ export async function GET() {
     
     console.log('Recent activity check complete');
     
+    // DUPLICATE ANALYSIS - Find potential duplicates
+    const duplicateAnalysis: any[] = [];
+    
+    for (const key of keys) {
+      const rawData = await redis.hGet(key, 'data');
+      if (!rawData) continue;
+      
+      const playlist = JSON.parse(rawData);
+      if (!playlist.keywords) continue;
+      
+      // Group by keyword + territory + position
+      const similarGroups = new Map<string, any[]>();
+      
+      playlist.keywords.forEach((keyword: any) => {
+        const groupKey = `${keyword.keyword.toLowerCase().trim()}-${keyword.territory.toLowerCase()}-${keyword.position}`;
+        if (!similarGroups.has(groupKey)) {
+          similarGroups.set(groupKey, []);
+        }
+        similarGroups.get(groupKey)!.push(keyword);
+      });
+      
+      // Find duplicates
+      similarGroups.forEach((entries, groupKey) => {
+        if (entries.length > 1) {
+          const differences = [];
+          for (let i = 1; i < entries.length; i++) {
+            const timeDiff = new Date(entries[i].timestamp).getTime() - new Date(entries[0].timestamp).getTime();
+            differences.push({
+              entry1Timestamp: entries[0].timestamp,
+              entry2Timestamp: entries[i].timestamp,
+              timeDifferenceMs: timeDiff,
+              timeDifferenceSeconds: (timeDiff / 1000).toFixed(3)
+            });
+          }
+          
+          duplicateAnalysis.push({
+            keyword: entries[0].keyword,
+            position: entries[0].position,
+            territory: entries[0].territory,
+            duplicateCount: entries.length,
+            differences
+          });
+        }
+      });
+    }
+    
     const response = NextResponse.json({
       success: true,
       debug: {
@@ -105,7 +151,11 @@ export async function GET() {
           newest: sortedDates[sortedDates.length - 1]
         },
         apiLogKeys: apiLogKeys.length,
-        redisConnectionStatus: 'connected'
+        redisConnectionStatus: 'connected',
+        duplicateAnalysis: {
+          totalDuplicateGroups: duplicateAnalysis.length,
+          duplicates: duplicateAnalysis.slice(0, 10) // First 10 for debugging
+        }
       }
     });
     

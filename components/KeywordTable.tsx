@@ -78,7 +78,7 @@ export default function KeywordTable({
     });
     
     const displayRanking = sortedRankings[0]; // Use most recent
-    const territories = Array.from(new Set(rankings.map(r => r.territory)));
+    const territories = Array.from(new Set(rankings.map(r => r.territory.toLowerCase())));
     
     // Use the most common capitalization for display
     const capitalizations = rankings.map(r => r.keyword);

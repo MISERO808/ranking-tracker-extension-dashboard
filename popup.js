@@ -471,18 +471,24 @@ async function syncToBackend() {
       await chrome.storage.local.get(['rankingHistory', 'tokens', 'starredKeywords']);
     
     // Get backend URL from storage or use default
-    const { backendUrl = 'https://your-backend.vercel.app' } = await chrome.storage.sync.get('backendUrl');
+    let { backendUrl = 'https://ranking-tracker-extension-dashboard.vercel.app' } = await chrome.storage.sync.get('backendUrl');
     
-    const response = await fetch(`${backendUrl}/api/rankings/bulk`, {
+    // Update URL if still using placeholder
+    if (backendUrl.includes('your-backend')) {
+      backendUrl = 'https://ranking-tracker-extension-dashboard.vercel.app';
+      await chrome.storage.sync.set({ backendUrl });
+    }
+    
+    // Convert to playlist format expected by dashboard
+    const playlistData = await buildPlaylistDataForSync(rankingHistory);
+    
+    const response = await fetch(`${backendUrl}/api/playlists`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${tokens.accessToken || ''}`
       },
-      body: JSON.stringify({ 
-        rankings: rankingHistory,
-        starredKeywords: starredKeywords
-      })
+      body: JSON.stringify(playlistData)
     });
     
     if (response.ok) {
@@ -497,6 +503,45 @@ async function syncToBackend() {
     btn.disabled = false;
     btn.textContent = 'Sync to Backend';
   }
+}
+
+async function buildPlaylistDataForSync(rankingHistory) {
+  const { watchedPlaylists = {} } = await chrome.storage.local.get('watchedPlaylists');
+  
+  // Group rankings by playlist
+  const playlistGroups = {};
+  
+  rankingHistory.forEach(ranking => {
+    if (!playlistGroups[ranking.playlistId]) {
+      playlistGroups[ranking.playlistId] = {
+        rankings: [],
+        playlist: ranking
+      };
+    }
+    playlistGroups[ranking.playlistId].rankings.push(ranking);
+  });
+  
+  // Convert to dashboard format - send the main playlist (first one)
+  const mainPlaylistId = Object.keys(playlistGroups)[0];
+  if (!mainPlaylistId) return null;
+  
+  const mainPlaylist = playlistGroups[mainPlaylistId];
+  const watchedPlaylist = watchedPlaylists[mainPlaylistId];
+  
+  return {
+    id: mainPlaylistId,
+    name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
+    image: mainPlaylist.playlist.playlistImage || '',
+    keywords: mainPlaylist.rankings.map(ranking => ({
+      keyword: ranking.keyword,
+      position: ranking.position,
+      territory: ranking.territory || 'de',
+      timestamp: ranking.timestamp,
+      userId: ranking.userId,
+      sessionId: ranking.sessionId
+    })),
+    lastUpdated: new Date().toISOString()
+  };
 }
 
 function showNotification(message, type = 'success') {

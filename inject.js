@@ -181,18 +181,44 @@
         // Update stored results
         allSearchResults.set(keyword, existingResults);
         
-        // Get territory
-        let territory = variables.market || extractTerritoryFromUrl();
-        if (!territory || territory === 'Unknown') {
+        // Get territory - try multiple sources in priority order
+        let territory = null;
+        
+        // Priority 1: From search variables
+        if (variables.market && variables.market !== 'Unknown') {
+          territory = variables.market.toUpperCase();
+        }
+        
+        // Priority 2: From captured market (masthead API)
+        if (!territory && capturedMarket && capturedMarket !== 'Unknown') {
+          territory = capturedMarket.toUpperCase();
+        }
+        
+        // Priority 3: From sessionStorage
+        if (!territory) {
           try {
-            territory = capturedMarket || sessionStorage.getItem('spotify-tracker-market') || 'Unknown';
-          } catch(e) {
-            territory = 'Unknown';
+            const storedMarket = sessionStorage.getItem('spotify-tracker-market');
+            if (storedMarket && storedMarket !== 'Unknown') {
+              territory = storedMarket.toUpperCase();
+            }
+          } catch(e) {}
+        }
+        
+        // Priority 4: From URL or localStorage
+        if (!territory) {
+          const extractedTerritory = extractTerritoryFromUrl();
+          if (extractedTerritory && extractedTerritory !== 'Unknown') {
+            territory = extractedTerritory.toUpperCase();
           }
         }
-        if (territory && territory !== 'Unknown') {
-          territory = territory.toUpperCase();
+        
+        // Default to DE if still no territory found
+        if (!territory || territory === 'Unknown') {
+          territory = 'DE';
+          console.log('[Spotify Tracker Inject] No territory found, defaulting to DE');
         }
+        
+        console.log(`[Spotify Tracker Inject] Final territory: ${territory}`);
         
         // Get user ID
         if (!capturedUserId) {
@@ -254,54 +280,96 @@
   }
   
   function extractTerritoryFromUrl() {
-    // Try to extract territory from URL params or localStorage
+    console.log('[Spotify Tracker Inject] Extracting territory from various sources...');
+    
+    // Try URL params first
     const urlParams = new URLSearchParams(window.location.search);
     const market = urlParams.get('market');
-    if (market) return market;
+    if (market && market.length === 2) {
+      console.log(`[Spotify Tracker Inject] Found market in URL: ${market}`);
+      return market.toUpperCase();
+    }
     
     // Try localStorage for Spotify settings
     try {
-      const spotifySettings = localStorage.getItem('spotify:settings');
-      if (spotifySettings) {
-        const settings = JSON.parse(spotifySettings);
-        if (settings.market) return settings.market;
-      }
+      // Check common Spotify localStorage keys
+      const spotifyKeys = Object.keys(localStorage).filter(key => 
+        key.includes('spotify') || key.includes('market') || key.includes('country')
+      );
       
-      // Try other localStorage keys
-      const keys = Object.keys(localStorage);
-      for (const key of keys) {
-        if (key.includes('market') || key.includes('country')) {
+      for (const key of spotifyKeys) {
+        try {
           const value = localStorage.getItem(key);
+          if (!value) continue;
+          
+          // Try parsing as JSON first
           try {
             const parsed = JSON.parse(value);
-            if (parsed.market) return parsed.market;
-            if (parsed.country) return parsed.country;
-          } catch (e) {
-            // Not JSON, check if it's a country code
-            if (value && value.length === 2) return value.toUpperCase();
+            if (parsed.market && parsed.market.length === 2) {
+              console.log(`[Spotify Tracker Inject] Found market in localStorage[${key}]: ${parsed.market}`);
+              return parsed.market.toUpperCase();
+            }
+            if (parsed.country && parsed.country.length === 2) {
+              console.log(`[Spotify Tracker Inject] Found country in localStorage[${key}]: ${parsed.country}`);
+              return parsed.country.toUpperCase();
+            }
+          } catch (parseError) {
+            // Not JSON, check if it's a direct country code
+            if (value.length === 2 && /^[A-Z]{2}$/i.test(value)) {
+              console.log(`[Spotify Tracker Inject] Found country code in localStorage[${key}]: ${value}`);
+              return value.toUpperCase();
+            }
           }
+        } catch (e) {
+          // Skip this key
         }
       }
       
-      // Check Spotify's session storage
+      // Check sessionStorage too
       const sessionKeys = Object.keys(sessionStorage);
       for (const key of sessionKeys) {
         if (key.includes('market') || key.includes('country')) {
           const value = sessionStorage.getItem(key);
-          if (value && value.length === 2) return value.toUpperCase();
+          if (value && value.length === 2 && /^[A-Z]{2}$/i.test(value)) {
+            console.log(`[Spotify Tracker Inject] Found market in sessionStorage[${key}]: ${value}`);
+            return value.toUpperCase();
+          }
         }
       }
     } catch (e) {
-      console.log('[Spotify Tracker] Could not extract territory from storage');
+      console.log('[Spotify Tracker Inject] Could not extract territory from storage:', e);
     }
     
-    // Try to get from Spotify's global object if available
+    // Try Spotify's global objects
     try {
       if (window.Spotify?.Session?.get()?.market) {
-        return window.Spotify.Session.get().market;
+        const market = window.Spotify.Session.get().market;
+        console.log(`[Spotify Tracker Inject] Found market in Spotify.Session: ${market}`);
+        return market.toUpperCase();
+      }
+      
+      // Try other Spotify global objects
+      if (window.__spotify && window.__spotify.market) {
+        console.log(`[Spotify Tracker Inject] Found market in __spotify: ${window.__spotify.market}`);
+        return window.__spotify.market.toUpperCase();
+      }
+    } catch (e) {
+      console.log('[Spotify Tracker Inject] Could not extract territory from global objects:', e);
+    }
+    
+    // Try to infer from page language or other indicators
+    try {
+      const htmlLang = document.documentElement.lang;
+      if (htmlLang && htmlLang.includes('-')) {
+        const country = htmlLang.split('-')[1];
+        if (country && country.length === 2) {
+          console.log(`[Spotify Tracker Inject] Inferred country from HTML lang: ${country}`);
+          return country.toUpperCase();
+        }
       }
     } catch (e) {}
     
+    console.log('[Spotify Tracker Inject] No territory found from any source');
     return null;
   }
   

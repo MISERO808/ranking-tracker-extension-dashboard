@@ -172,7 +172,7 @@ export default function PlaylistDetail() {
                   className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-spotify-green"
                 >
                   <option value="all">All Countries</option>
-                  {Array.from(new Set(playlist.keywords.map(k => k.territory))).sort().map(territory => (
+                  {Array.from(new Set(playlist.keywords.map(k => k.territory.toLowerCase()))).sort().map(territory => (
                     <option key={territory} value={territory}>
                       {territory.toUpperCase()}
                     </option>
@@ -182,7 +182,7 @@ export default function PlaylistDetail() {
               
               {/* Territories Display */}
               <div className="flex flex-wrap gap-2 mt-4">
-                {Array.from(new Set(playlist.keywords.map(k => k.territory))).map(territory => (
+                {Array.from(new Set(playlist.keywords.map(k => k.territory.toLowerCase()))).map(territory => (
                   <span 
                     key={territory}
                     className="px-3 py-1 bg-spotify-green bg-opacity-20 text-spotify-green text-sm rounded"
