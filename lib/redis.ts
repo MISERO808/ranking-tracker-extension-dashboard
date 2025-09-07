@@ -1,18 +1,33 @@
 import { createClient } from 'redis';
 
 const client = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
+  url: process.env.REDIS_URL || process.env.KV_URL || 'redis://localhost:6379',
   password: process.env.REDIS_PASSWORD || undefined,
+  socket: {
+    tls: process.env.REDIS_URL?.startsWith('rediss://') || process.env.KV_URL?.startsWith('rediss://'),
+  },
 });
 
-client.on('error', (err) => console.log('Redis Client Error', err));
+client.on('error', (err) => {
+  console.error('Redis Client Error:', err);
+});
+
+client.on('connect', () => {
+  console.log('Redis Client Connected');
+});
 
 let isConnected = false;
 
 export async function getRedisClient() {
   if (!isConnected) {
-    await client.connect();
-    isConnected = true;
+    try {
+      await client.connect();
+      isConnected = true;
+      console.log('Redis connection established');
+    } catch (error) {
+      console.error('Failed to connect to Redis:', error);
+      throw error;
+    }
   }
   return client;
 }
