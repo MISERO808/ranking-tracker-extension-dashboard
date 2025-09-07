@@ -42,6 +42,42 @@ export default function PlaylistDetail() {
     setStarredKeywords(newStarred);
     localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
   };
+  
+  const deleteKeyword = async (keywordToDelete: string) => {
+    if (!confirm(`Are you sure you want to delete all entries for "${keywordToDelete}"?`)) {
+      return;
+    }
+    
+    try {
+      // Remove from local state immediately for better UX
+      const updatedPlaylist = {
+        ...playlist!,
+        keywords: playlist!.keywords.filter(k => k.keyword.toLowerCase() !== keywordToDelete.toLowerCase())
+      };
+      setPlaylist(updatedPlaylist);
+      
+      // Remove from starred keywords if it was starred
+      const newStarred = starredKeywords.filter(k => k.toLowerCase() !== keywordToDelete.toLowerCase());
+      setStarredKeywords(newStarred);
+      localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
+      
+      // Update the server
+      const response = await fetch(`/api/playlists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPlaylist)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update playlist');
+      }
+    } catch (error) {
+      console.error('Error deleting keyword:', error);
+      alert('Failed to delete keyword. Please try again.');
+      // Refresh the playlist to get the correct state
+      fetchPlaylist();
+    }
+  };
 
   useEffect(() => {
     fetchPlaylist();
@@ -173,6 +209,7 @@ export default function PlaylistDetail() {
               selectedCountryFilter={selectedCountryFilter === 'all' ? undefined : selectedCountryFilter}
               starredKeywords={starredKeywords}
               onToggleStar={toggleStar}
+              onDeleteKeyword={deleteKeyword}
             />
           </div>
 

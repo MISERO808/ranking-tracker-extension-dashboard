@@ -63,6 +63,26 @@ export interface KeywordHistory {
 // Redis operations
 export async function savePlaylistData(playlistId: string, data: PlaylistData) {
   const redis = await getRedisClient();
+  
+  // Get existing playlist data to preserve historical rankings
+  const existingData = await getPlaylistData(playlistId);
+  
+  if (existingData) {
+    // Merge new keywords with existing ones, keeping all historical data
+    const existingKeywordsMap = new Map(existingData.keywords.map(k => 
+      [`${k.keyword.toLowerCase()}-${k.territory}-${k.timestamp}`, k]
+    ));
+    
+    // Add new keywords while preserving existing ones
+    data.keywords.forEach(newKeyword => {
+      const key = `${newKeyword.keyword.toLowerCase()}-${newKeyword.territory}-${newKeyword.timestamp}`;
+      existingKeywordsMap.set(key, newKeyword);
+    });
+    
+    // Update the data with all keywords (historical + new)
+    data.keywords = Array.from(existingKeywordsMap.values());
+  }
+  
   await redis.hSet(`playlist:${playlistId}`, 'data', JSON.stringify(data));
 }
 
