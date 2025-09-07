@@ -47,6 +47,8 @@ export interface KeywordRanking {
   territory: string;
   timestamp: string;
   trend?: 'up' | 'down' | 'stable';
+  userId?: string; // User/account ID who pulled this ranking
+  sessionId?: string; // Session ID for grouping related searches
 }
 
 export interface KeywordHistory {
@@ -85,12 +87,17 @@ export async function getAllPlaylists(): Promise<PlaylistData[]> {
   return playlists;
 }
 
-export async function saveKeywordHistory(playlistId: string, keyword: string, territory: string, position: number) {
+export async function saveKeywordHistory(playlistId: string, keyword: string, territory: string, position: number, userId?: string, sessionId?: string) {
   const redis = await getRedisClient();
   const key = `history:${playlistId}:${keyword}:${territory}`;
   const timestamp = new Date().toISOString();
   
-  await redis.lPush(key, JSON.stringify({ position, timestamp }));
+  await redis.lPush(key, JSON.stringify({ 
+    position, 
+    timestamp,
+    userId,
+    sessionId 
+  }));
   
   // Keep only last 100 entries
   await redis.lTrim(key, 0, 99);

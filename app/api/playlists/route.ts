@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllPlaylists, savePlaylistData, PlaylistData } from '@/lib/redis';
+import { getAllPlaylists, savePlaylistData, saveKeywordHistory, PlaylistData } from '@/lib/redis';
 
 // Add CORS headers
 const corsHeaders = {
@@ -48,7 +48,20 @@ export async function POST(request: Request) {
     console.log(`POST /api/playlists - Playlist: ${playlistData.name} (${playlistData.keywords.length} keywords)`);
     
     await savePlaylistData(playlistData.id, playlistData);
-    console.log('POST /api/playlists - Playlist saved successfully');
+    
+    // Save keyword history for trending analysis
+    for (const keyword of playlistData.keywords) {
+      await saveKeywordHistory(
+        playlistData.id, 
+        keyword.keyword, 
+        keyword.territory, 
+        keyword.position,
+        keyword.userId,
+        keyword.sessionId
+      );
+    }
+    
+    console.log('POST /api/playlists - Playlist and history saved successfully');
     
     const response = NextResponse.json({ success: true });
     Object.entries(corsHeaders).forEach(([key, value]) => {

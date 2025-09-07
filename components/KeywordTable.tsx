@@ -88,7 +88,9 @@ export default function KeywordTable({
 
   // Filter by selected country if provided
   const filteredKeywords = selectedCountryFilter 
-    ? deduplicatedKeywords.filter((k: DeduplicatedKeyword) => k.territories.includes(selectedCountryFilter.toLowerCase()))
+    ? deduplicatedKeywords.filter((k: DeduplicatedKeyword) => 
+        k.territories.some(territory => territory.toLowerCase() === selectedCountryFilter.toLowerCase())
+      )
     : deduplicatedKeywords;
 
   // Sort by position (best first)
@@ -116,11 +118,17 @@ export default function KeywordTable({
               const isSelected = selectedKeyword === keyword.keyword && 
                                selectedTerritory === keyword.territory;
               
+              // Show if pulled by different users
+              const uniqueUsers = Array.from(new Set(keyword.allRankings.map(r => r.userId).filter(Boolean)));
+              const hasMultipleUsers = uniqueUsers.length > 1;
+              
               return (
                 <tr 
-                  key={`${keyword.keyword}-${keyword.territory}`}
+                  key={`${keyword.keyword}-${keyword.territories.join('-')}`}
                   className={`border-b border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors ${
                     isSelected ? 'bg-spotify-green bg-opacity-20' : ''
+                  } ${
+                    hasMultipleUsers ? 'border-l-2 border-l-blue-500' : ''
                   }`}
                   onClick={() => onKeywordSelect(keyword.keyword, keyword.territory)}
                 >
@@ -142,14 +150,16 @@ export default function KeywordTable({
                   
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      {keyword.territories.map((territory: string) => (
-                        <span key={territory} className="flex items-center gap-1">
-                          <span>{getTerritoryFlag(territory)}</span>
-                          <span className="text-sm text-spotify-gray">
-                            {territory.toUpperCase()}
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from(new Set(keyword.territories)).map((territory: string) => (
+                          <span key={territory} className="flex items-center gap-1">
+                            <span>{getTerritoryFlag(territory)}</span>
+                            <span className="text-sm text-spotify-gray">
+                              {territory.toUpperCase()}
+                            </span>
                           </span>
-                        </span>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </td>
                   
