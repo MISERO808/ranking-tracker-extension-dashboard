@@ -36,7 +36,7 @@ export default function KeywordDetail() {
       setPlaylist(data);
       
       // Set default territory to the first one found for this keyword
-      const keywordData = data.keywords.filter(k => 
+      const keywordData = data.keywords.filter((k: KeywordRanking) => 
         k.keyword.toLowerCase().trim() === keyword.toLowerCase().trim()
       );
       if (keywordData.length > 0) {
@@ -77,22 +77,22 @@ export default function KeywordDetail() {
   }
 
   // Get all data for this keyword
-  const allKeywordData = playlist.keywords.filter(k => 
+  const allKeywordData = playlist.keywords.filter((k: KeywordRanking) => 
     k.keyword.toLowerCase().trim() === keyword.toLowerCase().trim()
   );
 
   // Filter by selected territory
   const filteredData = selectedTerritory === 'all' 
     ? allKeywordData 
-    : allKeywordData.filter(k => k.territory === selectedTerritory);
+    : allKeywordData.filter((k: KeywordRanking) => k.territory === selectedTerritory);
 
   // Get available territories
-  const territories = Array.from(new Set(allKeywordData.map(k => k.territory))).sort();
+  const territories = Array.from(new Set(allKeywordData.map((k: KeywordRanking) => k.territory))).sort();
 
   // Prepare chart data
   const chartData: ChartDataPoint[] = filteredData
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .map(ranking => ({
+    .map((ranking: KeywordRanking) => ({
       date: new Date(ranking.timestamp).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -104,7 +104,7 @@ export default function KeywordDetail() {
     }));
 
   // Calculate stats
-  const positions = filteredData.map(r => r.position);
+  const positions = filteredData.map((r: KeywordRanking) => r.position);
   const bestPosition = Math.min(...positions);
   const worstPosition = Math.max(...positions);
   const currentPosition = chartData[chartData.length - 1]?.position;
@@ -117,7 +117,7 @@ export default function KeywordDetail() {
     : 0;
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
