@@ -130,7 +130,7 @@ async function runMigration() {
           // Clear old data and insert updated data
           await redis.del(key);
           if (updatedEntries.length > 0) {
-            await redis.lPush(key, ...updatedEntries);
+            await redis.lPush(key, updatedEntries);
           }
           migratedHistories++;
           migratedEntries += updatedEntries.length;
