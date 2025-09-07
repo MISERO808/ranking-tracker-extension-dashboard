@@ -47,6 +47,15 @@ export async function POST(request: Request) {
     const playlistData: PlaylistData = await request.json();
     console.log(`POST /api/playlists - Playlist: ${playlistData.name} (${playlistData.keywords.length} keywords)`);
     
+    // DEBUG: Log keyword timestamps to verify historical data
+    const keywordsByDate = playlistData.keywords.reduce((acc, k) => {
+      const date = new Date(k.timestamp).toISOString().split('T')[0];
+      if (!acc[date]) acc[date] = 0;
+      acc[date]++;
+      return acc;
+    }, {} as { [date: string]: number });
+    console.log('POST /api/playlists - Keywords by date:', keywordsByDate);
+    
     await savePlaylistData(playlistData.id, playlistData);
     
     // Save keyword history for trending analysis
@@ -62,6 +71,7 @@ export async function POST(request: Request) {
     }
     
     console.log('POST /api/playlists - Playlist and history saved successfully');
+    console.log(`POST /api/playlists - Total keywords after save: ${playlistData.keywords.length}`);
     
     const response = NextResponse.json({ success: true });
     Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -70,6 +80,7 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error('Error saving playlist:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     const response = NextResponse.json({ 
       error: 'Failed to save playlist',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -64,14 +64,20 @@ export interface KeywordHistory {
 export async function savePlaylistData(playlistId: string, data: PlaylistData) {
   const redis = await getRedisClient();
   
+  console.log(`[Redis] Saving playlist ${playlistId} with ${data.keywords.length} keywords`);
+  
   // Get existing playlist data to preserve historical rankings
   const existingData = await getPlaylistData(playlistId);
   
   if (existingData) {
+    console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
+    
     // Merge new keywords with existing ones, keeping all historical data
     const existingKeywordsMap = new Map(existingData.keywords.map(k => 
       [`${k.keyword.toLowerCase()}-${k.territory}-${k.timestamp}`, k]
     ));
+    
+    console.log(`[Redis] Existing keywords map has ${existingKeywordsMap.size} entries`);
     
     // Add new keywords while preserving existing ones
     data.keywords.forEach(newKeyword => {
@@ -79,11 +85,26 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
       existingKeywordsMap.set(key, newKeyword);
     });
     
+    console.log(`[Redis] After merge, map has ${existingKeywordsMap.size} entries`);
+    
     // Update the data with all keywords (historical + new)
     data.keywords = Array.from(existingKeywordsMap.values());
+    console.log(`[Redis] Final keyword count: ${data.keywords.length}`);
+    
+    // DEBUG: Show date distribution
+    const dateDistribution = data.keywords.reduce((acc, k) => {
+      const date = new Date(k.timestamp).toISOString().split('T')[0];
+      if (!acc[date]) acc[date] = 0;
+      acc[date]++;
+      return acc;
+    }, {} as { [date: string]: number });
+    console.log(`[Redis] Keywords by date:`, dateDistribution);
+  } else {
+    console.log(`[Redis] No existing data found, saving ${data.keywords.length} keywords`);
   }
   
   await redis.hSet(`playlist:${playlistId}`, 'data', JSON.stringify(data));
+  console.log(`[Redis] Successfully saved playlist ${playlistId}`);
 }
 
 export async function getPlaylistData(playlistId: string): Promise<PlaylistData | null> {

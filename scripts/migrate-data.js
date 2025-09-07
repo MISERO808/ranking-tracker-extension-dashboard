@@ -127,30 +127,21 @@ class DataMigrator {
   }
 
   transformRankings(rankings) {
-    // Get the latest ranking for each keyword+territory combination
-    const latestRankings = new Map();
-    
-    rankings.forEach(ranking => {
+    // Preserve ALL historical rankings instead of just the latest
+    return rankings.map(ranking => {
       // Fix unknown territories to DE
       const territory = (ranking.territory === 'unknown' || !ranking.territory) ? 'DE' : ranking.territory;
-      const key = `${ranking.keyword}-${territory}`;
-      const existing = latestRankings.get(key);
       
-      const fixedRanking = { ...ranking, territory };
-      
-      if (!existing || new Date(ranking.timestamp) > new Date(existing.timestamp)) {
-        latestRankings.set(key, fixedRanking);
-      }
+      return {
+        keyword: ranking.keyword,
+        position: ranking.position,
+        territory: territory.toLowerCase(),
+        timestamp: ranking.timestamp,
+        trend: this.calculateTrend(rankings, ranking.keyword, territory),
+        userId: ranking.userId || 'migrated-user',
+        sessionId: ranking.sessionId || 'migration-session'
+      };
     });
-
-    // Transform to dashboard format
-    return Array.from(latestRankings.values()).map(ranking => ({
-      keyword: ranking.keyword,
-      position: ranking.position,
-      territory: ranking.territory.toLowerCase(),
-      timestamp: ranking.timestamp,
-      trend: this.calculateTrend(rankings, ranking.keyword, ranking.territory)
-    }));
   }
 
   calculateTrend(rankings, keyword, territory) {
