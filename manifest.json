@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Spotify Playlist Ranking Tracker",
+  "version": "1.0.0",
+  "description": "Automatically track your playlist rankings when searching on Spotify",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://open.spotify.com/*",
+    "https://api-partner.spotify.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://open.spotify.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": ["https://open.spotify.com/*"]
+    }
+  ]
+}

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 450px;
+      min-height: 550px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      margin: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+      flex: 1;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-left: 8px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .tab-button {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    
+    .tab-button:hover {
+      color: #374151;
+    }
+    
+    .tab-button.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Starred Keywords */
+    .starred-keyword-item {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    
+    
+    .keyword-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .keyword-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .keyword-link {
+      cursor: pointer;
+      color: #667eea;
+      transition: color 0.2s;
+    }
+    
+    .keyword-link:hover {
+      color: #5a67d8;
+      text-decoration: underline;
+    }
+    
+    .unstar-btn {
+      cursor: pointer;
+      font-size: 18px;
+      transition: opacity 0.2s;
+    }
+    
+    .unstar-btn:hover {
+      opacity: 0.7;
+    }
+    
+    .keyword-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    
+    .star-btn {
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 4px;
+      transition: opacity 0.2s;
+    }
+    
+    .star-btn:hover {
+      opacity: 0.7;
+    }
+    
+    .star-btn.starred {
+      color: #fbbf24;
+    }
+    
+    /* Rest of original styles */
+    .section {
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .playlist-list {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      padding: 6px;
+      margin-bottom: 4px;
+      background: white;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    
+    .playlist-item .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .playlist-item .remove {
+      color: #ef4444;
+      cursor: pointer;
+      margin-left: 8px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    
+    .playlist-item .remove:hover {
+      opacity: 1;
+    }
+    
+    .add-playlist {
+      width: 100%;
+      margin-top: 8px;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #5a67d8;
+    }
+    
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    
+    .stat-card {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    
+    .recent-rankings {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 6px;
+      background: white;
+      border-radius: 6px;
+      font-size: 12px;
+      position: relative;
+      transition: background 0.2s;
+    }
+    
+    .ranking-item:hover {
+      background: #f3f4f6;
+    }
+    
+    .ranking-item:hover .delete-ranking {
+      opacity: 1;
+    }
+    
+    .ranking-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ranking-playlist {
+      font-weight: 600;
+      color: #4b5563;
+      font-size: 11px;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .ranking-keyword {
+      font-weight: 500;
+      color: #333;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    
+    .ranking-position {
+      background: #667eea;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .ranking-time {
+      color: #9ca3af;
+      font-size: 11px;
+    }
+    
+    .delete-ranking {
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      padding: 4px;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .actions button {
+      flex: 1;
+    }
+    
+    .secondary-button {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .secondary-button:hover {
+      background: #e5e7eb;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+    
+    .badge {
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+    
+    .clear-all {
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: normal;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .clear-all:hover {
+      opacity: 1;
+    }
+    
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      z-index: 1;
+      bottom: 100%;
+      left: 0;
+      margin-bottom: 4px;
+    }
+    
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #374151;
+      padding: 10px 12px;
+      text-decoration: none;
+      display: block;
+      cursor: pointer;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎵 Spotify Ranking Tracker</h1>
+      <button class="open-tab-btn" id="open-tab-btn" title="Open in new tab for resizing">⤢</button>
+      <div class="status-indicator" id="status"></div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="main">Dashboard</button>
+      <button class="tab-button" data-tab="starred">⭐ Starred</button>
+    </div>
+    
+    <!-- Main Tab -->
+    <div id="main-tab" class="tab-content active" style="display: block;">
+      <div class="section">
+        <div class="section-title">
+          Watched Playlists
+          <span id="playlist-count">(0)</span>
+        </div>
+        <div class="playlist-list" id="playlist-list">
+          <div class="empty-state">No playlists watched yet</div>
+        </div>
+        <div class="add-playlist">
+          <div class="input-group">
+            <input type="text" id="playlist-input" placeholder="Paste playlist URL or ID">
+            <button id="add-playlist-btn">Add</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">
+          Today's Stats
+        </div>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-value" id="searches-today">0</div>
+            <div class="stat-label">Searches</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="rankings-found">0</div>
+            <div class="stat-label">Rankings Found</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avg-position">-</div>
+            <div class="stat-label">Avg Position</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="best-position">-</div>
+            <div class="stat-label">Best Position</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">
+          Recent Rankings
+          <span class="clear-all" id="clear-all">Clear All</span>
+        </div>
+        <div class="recent-rankings" id="recent-rankings">
+          <div class="empty-state">No rankings captured yet</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Starred Tab -->
+    <div id="starred-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">
+          Starred Keywords
+        </div>
+        <div class="recent-rankings" id="starred-keywords">
+          <div class="empty-state">No starred keywords yet</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <div class="dropdown">
+        <button class="secondary-button">Export Data ▲</button>
+        <div class="dropdown-content">
+          <div class="dropdown-item" id="export-csv-all">Export All as CSV</div>
+          <div class="dropdown-item" id="export-csv-playlist">Export by Playlist (CSV)</div>
+          <div class="dropdown-item" id="export-json">Export as JSON</div>
+        </div>
+      </div>
+      <button id="sync-btn">Sync to Backend</button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
