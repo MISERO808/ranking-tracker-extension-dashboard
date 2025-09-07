@@ -275,8 +275,11 @@ async function processSearchResults(data) {
     
     // Check if this is a watched playlist
     if (watchedIds.includes(playlistId)) {
-      // Include territory in the session key to track per-territory
-      const sessionKey = `${data.keyword}-${playlistId}-${data.territory || 'Unknown'}`;
+      // Include territory and minute in the session key to prevent same-minute duplicates
+      const currentTime = new Date();
+      const minute = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 
+                             currentTime.getHours(), currentTime.getMinutes(), 0, 0).toISOString();
+      const sessionKey = `${data.keyword}-${playlistId}-${data.territory || 'Unknown'}-${minute}`;
       
       // Build overlay data for ALL watched playlists (should always show)
       // IMPORTANT: Filter by territory for accurate comparison

@@ -80,22 +80,46 @@ export async function GET() {
         keywords: normalizedKeywords
       };
       
-      // EXACT TIMESTAMP DEDUPLICATION - Remove entries with identical timestamp, keyword, position, territory
-      const uniqueKeywords: any[] = [];
-      const seenExactEntries = new Set<string>();
-      let duplicatesRemoved = 0;
+      // SAME-MINUTE DEDUPLICATION - Remove duplicates within same minute, keep latest
+      const minuteGroups = new Map<string, any[]>();
       
       normalizedKeywords.forEach((keyword: any) => {
-        // Create EXACT signature including timestamp
-        const exactSignature = `${keyword.keyword.toLowerCase().trim()}-${keyword.territory.toLowerCase()}-${keyword.position}-${keyword.timestamp}`;
+        // Round timestamp to the minute (remove seconds and milliseconds)
+        const timestamp = new Date(keyword.timestamp);
+        const minuteTimestamp = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate(), 
+                                        timestamp.getHours(), timestamp.getMinutes(), 0, 0);
         
-        if (seenExactEntries.has(exactSignature)) {
-          console.log(`  🎯 EXACT TIMESTAMP DUPLICATE: "${keyword.keyword}" #${keyword.position} at ${keyword.timestamp}`);
-          duplicatesRemoved++;
+        // Create key for same keyword+territory+position within same minute
+        const minuteKey = `${keyword.keyword.toLowerCase().trim()}-${keyword.territory.toLowerCase()}-${keyword.position}-${minuteTimestamp.toISOString()}`;
+        
+        if (!minuteGroups.has(minuteKey)) {
+          minuteGroups.set(minuteKey, []);
+        }
+        minuteGroups.get(minuteKey)!.push(keyword);
+      });
+      
+      // For each group, keep only the LATEST entry (highest timestamp)
+      const uniqueKeywords: any[] = [];
+      let duplicatesRemoved = 0;
+      
+      minuteGroups.forEach((duplicates, minuteKey) => {
+        if (duplicates.length > 1) {
+          console.log(`  ⏱️ SAME-MINUTE DUPLICATES: "${duplicates[0].keyword}" #${duplicates[0].position}`);
+          console.log(`     ${duplicates.length} entries within same minute`);
+          
+          // Sort by timestamp (latest first) and keep the latest one
+          const sortedDuplicates = duplicates.sort((a, b) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+          
+          // Keep only the latest (first after sorting)
+          uniqueKeywords.push(sortedDuplicates[0]);
+          duplicatesRemoved += duplicates.length - 1;
+          console.log(`     ✅ Kept latest: ${sortedDuplicates[0].timestamp}`);
+          console.log(`     🗑️ Removed ${duplicates.length - 1} earlier entries`);
         } else {
-          // First time seeing this exact combination
-          seenExactEntries.add(exactSignature);
-          uniqueKeywords.push(keyword);
+          // No duplicates within this minute, keep as is
+          uniqueKeywords.push(duplicates[0]);
         }
       });
       
