@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { KeywordRanking } from '@/lib/redis';
 
 interface KeywordTableProps {
@@ -10,6 +11,7 @@ interface KeywordTableProps {
   starredKeywords?: string[];
   onToggleStar?: (keyword: string) => void;
   onDeleteKeyword?: (keyword: string) => void;
+  playlistId: string;
 }
 
 interface DeduplicatedKeyword extends KeywordRanking {
@@ -34,7 +36,8 @@ export default function KeywordTable({
   selectedCountryFilter,
   starredKeywords = [],
   onToggleStar,
-  onDeleteKeyword
+  onDeleteKeyword,
+  playlistId
 }: KeywordTableProps) {
   if (keywords.length === 0) {
     return (
@@ -136,7 +139,18 @@ export default function KeywordTable({
         </td>
         
         <td className="py-3 px-2 font-medium">
-          {keyword.keyword}
+          <div className="flex items-center gap-2">
+            <span className="cursor-pointer" onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}>
+              {keyword.keyword}
+            </span>
+            <Link 
+              href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
+              className="text-spotify-green hover:text-green-400 transition-colors text-sm"
+              title="View detailed history"
+            >
+              📊
+            </Link>
+          </div>
         </td>
         
         <td className="py-3 px-2 text-lg">

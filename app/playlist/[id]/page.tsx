@@ -210,6 +210,7 @@ export default function PlaylistDetail() {
               starredKeywords={starredKeywords}
               onToggleStar={toggleStar}
               onDeleteKeyword={deleteKeyword}
+              playlistId={playlist.id}
             />
           </div>
 
@@ -220,6 +221,7 @@ export default function PlaylistDetail() {
                 playlistId={playlist.id}
                 keyword={selectedKeyword}
                 territory={selectedTerritory}
+                allKeywords={playlist.keywords}
               />
             ) : (
               <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">

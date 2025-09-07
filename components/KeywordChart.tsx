@@ -8,6 +8,7 @@ interface KeywordChartProps {
   playlistId: string;
   keyword: string;
   territory: string;
+  allKeywords?: any[]; // Pass all keywords from playlist
 }
 
 interface ChartDataPoint {
@@ -16,31 +17,43 @@ interface ChartDataPoint {
   timestamp: string;
 }
 
-export default function KeywordChart({ playlistId, keyword, territory }: KeywordChartProps) {
+export default function KeywordChart({ playlistId, keyword, territory, allKeywords }: KeywordChartProps) {
   const [history, setHistory] = useState<KeywordHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHistory();
-  }, [playlistId, keyword, territory]);
+  }, [playlistId, keyword, territory, allKeywords]);
 
   const fetchHistory = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const params = new URLSearchParams({
-        playlistId,
-        keyword,
-        territory
-      });
-      
-      const response = await fetch(`/api/keywords/history?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch keyword history');
-      
-      const data = await response.json();
-      setHistory(data);
+      if (allKeywords) {
+        // Use provided keywords from playlist (faster)
+        const keywordData = allKeywords
+          .filter(k => 
+            k.keyword.toLowerCase().trim() === keyword.toLowerCase().trim() && 
+            k.territory.toLowerCase() === territory.toLowerCase()
+          )
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+          .map(k => ({ position: k.position, timestamp: k.timestamp }));
+          
+        setHistory({
+          keyword,
+          territory,
+          rankings: keywordData
+        });
+      } else {
+        // Fallback to API call
+        const params = new URLSearchParams({ playlistId, keyword, territory });
+        const response = await fetch(`/api/keywords/history?${params}`);
+        if (!response.ok) throw new Error('Failed to fetch keyword history');
+        const data = await response.json();
+        setHistory(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
