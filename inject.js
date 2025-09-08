@@ -21,7 +21,7 @@
     if (url.includes('/api/masthead/v1/masthead')) {
       const match = url.match(/market=([A-Z]{2})/i);
       if (match) {
-        capturedMarket = match[1].toUpperCase();
+        capturedMarket = match[1].toLowerCase();  // ALWAYS lowercase to prevent duplicates
         console.log(`[Spotify Tracker Inject] Captured market from masthead: ${capturedMarket}`);
         try {
           sessionStorage.setItem('spotify-tracker-market', capturedMarket);
@@ -72,7 +72,7 @@
         
         // Try to capture market from variables if not already captured
         if (!capturedMarket && requestBody.variables && requestBody.variables.market) {
-          capturedMarket = requestBody.variables.market.toUpperCase();
+          capturedMarket = requestBody.variables.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
           console.log(`[Spotify Tracker Inject] Captured market from search: ${capturedMarket}`);
           sessionStorage.setItem('spotify-tracker-market', capturedMarket);
         }
@@ -112,7 +112,7 @@
       
       // Try to capture market from variables
       if (variables.market && !capturedMarket) {
-        capturedMarket = variables.market.toUpperCase();
+        capturedMarket = variables.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         console.log(`[Spotify Tracker Inject] Captured market from search variables: ${capturedMarket}`);
         sessionStorage.setItem('spotify-tracker-market', capturedMarket);
       }
@@ -186,12 +186,12 @@
         
         // Priority 1: From search variables
         if (variables.market && variables.market !== 'Unknown') {
-          territory = variables.market.toUpperCase();
+          territory = variables.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         }
         
         // Priority 2: From captured market (masthead API)
         if (!territory && capturedMarket && capturedMarket !== 'Unknown') {
-          territory = capturedMarket.toUpperCase();
+          territory = capturedMarket.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         }
         
         // Priority 3: From sessionStorage
@@ -199,7 +199,7 @@
           try {
             const storedMarket = sessionStorage.getItem('spotify-tracker-market');
             if (storedMarket && storedMarket !== 'Unknown') {
-              territory = storedMarket.toUpperCase();
+              territory = storedMarket.toLowerCase();  // ALWAYS lowercase to prevent duplicates
             }
           } catch(e) {}
         }
@@ -208,7 +208,7 @@
         if (!territory) {
           const extractedTerritory = extractTerritoryFromUrl();
           if (extractedTerritory && extractedTerritory !== 'Unknown') {
-            territory = extractedTerritory.toUpperCase();
+            territory = extractedTerritory.toLowerCase();  // ALWAYS lowercase to prevent duplicates
           }
         }
         
@@ -287,7 +287,7 @@
     const market = urlParams.get('market');
     if (market && market.length === 2) {
       console.log(`[Spotify Tracker Inject] Found market in URL: ${market}`);
-      return market.toUpperCase();
+      return market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
     }
     
     // Try localStorage for Spotify settings
@@ -307,17 +307,17 @@
             const parsed = JSON.parse(value);
             if (parsed.market && parsed.market.length === 2) {
               console.log(`[Spotify Tracker Inject] Found market in localStorage[${key}]: ${parsed.market}`);
-              return parsed.market.toUpperCase();
+              return parsed.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
             }
             if (parsed.country && parsed.country.length === 2) {
               console.log(`[Spotify Tracker Inject] Found country in localStorage[${key}]: ${parsed.country}`);
-              return parsed.country.toUpperCase();
+              return parsed.country.toLowerCase();  // ALWAYS lowercase to prevent duplicates
             }
           } catch (parseError) {
             // Not JSON, check if it's a direct country code
             if (value.length === 2 && /^[A-Z]{2}$/i.test(value)) {
               console.log(`[Spotify Tracker Inject] Found country code in localStorage[${key}]: ${value}`);
-              return value.toUpperCase();
+              return value.toLowerCase();  // ALWAYS lowercase to prevent duplicates
             }
           }
         } catch (e) {
@@ -332,7 +332,7 @@
           const value = sessionStorage.getItem(key);
           if (value && value.length === 2 && /^[A-Z]{2}$/i.test(value)) {
             console.log(`[Spotify Tracker Inject] Found market in sessionStorage[${key}]: ${value}`);
-            return value.toUpperCase();
+            return value.toLowerCase();  // ALWAYS lowercase to prevent duplicates
           }
         }
       }
@@ -345,13 +345,13 @@
       if (window.Spotify?.Session?.get()?.market) {
         const market = window.Spotify.Session.get().market;
         console.log(`[Spotify Tracker Inject] Found market in Spotify.Session: ${market}`);
-        return market.toUpperCase();
+        return market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
       }
       
       // Try other Spotify global objects
       if (window.__spotify && window.__spotify.market) {
         console.log(`[Spotify Tracker Inject] Found market in __spotify: ${window.__spotify.market}`);
-        return window.__spotify.market.toUpperCase();
+        return window.__spotify.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
       }
     } catch (e) {
       console.log('[Spotify Tracker Inject] Could not extract territory from global objects:', e);
@@ -364,7 +364,7 @@
         const country = htmlLang.split('-')[1];
         if (country && country.length === 2) {
           console.log(`[Spotify Tracker Inject] Inferred country from HTML lang: ${country}`);
-          return country.toUpperCase();
+          return country.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         }
       }
     } catch (e) {}

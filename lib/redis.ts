@@ -73,15 +73,17 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
     
     // Merge new keywords with existing ones, keeping all historical data
+    // CRITICAL: Normalize territory to lowercase in the key to prevent duplicates like "DE" vs "de"
     const existingKeywordsMap = new Map(existingData.keywords.map(k => 
-      [`${k.keyword.toLowerCase()}-${k.territory}-${k.timestamp}`, k]
+      [`${k.keyword.toLowerCase()}-${k.territory.toLowerCase()}-${k.timestamp}`, k]
     ));
     
     console.log(`[Redis] Existing keywords map has ${existingKeywordsMap.size} entries`);
     
     // Add new keywords while preserving existing ones
     data.keywords.forEach(newKeyword => {
-      const key = `${newKeyword.keyword.toLowerCase()}-${newKeyword.territory}-${newKeyword.timestamp}`;
+      // CRITICAL: Normalize territory to lowercase in the key to prevent duplicates
+      const key = `${newKeyword.keyword.toLowerCase()}-${newKeyword.territory.toLowerCase()}-${newKeyword.timestamp}`;
       existingKeywordsMap.set(key, newKeyword);
     });
     
