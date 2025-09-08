@@ -123,7 +123,7 @@ export default function KeywordDetail() {
       return (
         <div className="neu-flat p-3">
           <p style={{ color: 'var(--text-primary)' }}>{`Position: #${data.position}`}</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {new Date(data.timestamp).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
