@@ -211,15 +211,15 @@ export default function KeywordTable({
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-3 text-spotify-green">{title}</h3>
         <div className="overflow-x-auto">
-          <table className="w-full keyword-table">
+          <table className="w-full neu-table">
             <thead>
               <tr>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Rank</th>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Keyword</th>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Trend</th>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Last Updated</th>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">⭐</th>
-                <th className="text-left py-4 px-4 text-gray-300 font-semibold">🗑️</th>
+                <th>Rank</th>
+                <th>Keyword</th>
+                <th>Trend</th>
+                <th>Last Updated</th>
+                <th>⭐</th>
+                <th>🗑️</th>
               </tr>
             </thead>
             <tbody>
@@ -232,9 +232,11 @@ export default function KeywordTable({
   );
   
   return (
-    <div className="card">
-      <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-        📊 Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
+    <div className="neu-card">
+      <h2 className="text-2xl font-bold mb-6">
+        <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+          📊 Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
+        </span>
       </h2>
       
       {renderKeywordSection(sortedStarredKeywords, `⭐ Starred Keywords (${sortedStarredKeywords.length})`)}

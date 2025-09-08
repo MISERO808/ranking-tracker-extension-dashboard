@@ -121,10 +121,10 @@ export default function PlaylistDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-spotify-black text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center min-h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-spotify-green"></div>
+      <div className="min-h-screen py-8">
+        <div className="container">
+          <div className="neu-card text-center py-16">
+            <div className="neu-spinner mx-auto"></div>
           </div>
         </div>
       </div>
@@ -133,13 +133,13 @@ export default function PlaylistDetail() {
 
   if (error || !playlist) {
     return (
-      <div className="min-h-screen bg-spotify-black text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="text-red-500 mb-4">Error: {error}</div>
+      <div className="min-h-screen py-8">
+        <div className="container">
+          <div className="neu-card text-center py-12">
+            <div className="text-xl mb-4" style={{ color: 'var(--error)' }}>Error: {error}</div>
             <Link 
               href="/"
-              className="px-4 py-2 bg-spotify-green text-black rounded hover:bg-green-400 transition-colors"
+              className="neu-btn-primary"
             >
               Back to Dashboard
             </Link>
@@ -153,10 +153,10 @@ export default function PlaylistDetail() {
     <div className="min-h-screen">
       <div className="container">
         {/* Header */}
-        <div className="card mb-8">
+        <div className="neu-card mb-8">
           <Link 
             href="/" 
-            className="btn btn-secondary mb-6 w-fit"
+            className="neu-btn mb-6 inline-flex"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -166,41 +166,42 @@ export default function PlaylistDetail() {
           
           <div className="flex items-start gap-8">
             {playlist.image && (
-              <div className="relative">
+              <div className="neu-inset rounded-2xl overflow-hidden w-40 h-40">
                 <img 
                   src={playlist.image}
                   alt={playlist.name}
-                  className="w-40 h-40 rounded-2xl object-cover shadow-2xl"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 to-transparent" />
               </div>
             )}
             
             <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                {playlist.name}
+              <h1 className="text-5xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+                  {playlist.name}
+                </span>
               </h1>
-              <div className="flex gap-8 text-gray-300 mb-6">
+              <div className="flex gap-8 mb-6" style={{ color: 'var(--text-secondary)' }}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)' }}></span>
                   {playlist.keywords.length} keywords tracked
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }}></span>
                   Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}
                 </span>
               </div>
               
               {/* Country Filter Dropdown */}
               <div className="mb-4">
-                <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 mb-2">
+                <label htmlFor="country-filter" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                   Filter by Country
                 </label>
                 <select 
                   id="country-filter"
                   value={selectedCountryFilter}
                   onChange={(e) => setSelectedCountryFilter(e.target.value)}
-                  className="glass rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400 w-48"
+                  className="neu-select w-48"
                 >
                   <option value="all">All Countries</option>
                   {(() => {
@@ -229,7 +230,7 @@ export default function PlaylistDetail() {
                   return territories.map(territory => (
                     <span 
                       key={territory}
-                      className="glass-bright px-3 py-1 text-sm rounded-full font-medium"
+                      className="neu-badge"
                     >
                       {territory.toUpperCase()}
                     </span>
@@ -269,10 +270,12 @@ export default function PlaylistDetail() {
                 allKeywords={playlist.keywords}
               />
             ) : (
-              <div className="card h-96 flex items-center justify-center">
+              <div className="neu-card h-96 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">📈</div>
-                  <div className="text-gray-400 text-lg">Select a keyword to view ranking history</div>
+                  <div className="neu-inset inline-block p-4 rounded-full mb-4">
+                    <span className="text-6xl">📈</span>
+                  </div>
+                  <div className="text-lg" style={{ color: 'var(--text-secondary)' }}>Select a keyword to view ranking history</div>
                 </div>
               </div>
             )}

@@ -51,10 +51,10 @@ export default function KeywordDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-spotify-black text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center min-h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-spotify-green"></div>
+      <div className="min-h-screen py-8">
+        <div className="container">
+          <div className="neu-card text-center py-16">
+            <div className="neu-spinner mx-auto"></div>
           </div>
         </div>
       </div>
@@ -63,11 +63,11 @@ export default function KeywordDetail() {
 
   if (error || !playlist) {
     return (
-      <div className="min-h-screen bg-spotify-black text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="text-red-500 mb-4">Error: {error}</div>
-            <Link href="/" className="px-4 py-2 bg-spotify-green text-black rounded hover:bg-green-400 transition-colors">
+      <div className="min-h-screen py-8">
+        <div className="container">
+          <div className="neu-card text-center py-12">
+            <div className="text-xl mb-4" style={{ color: 'var(--error)' }}>Error: {error}</div>
+            <Link href="/" className="neu-btn-primary">
               Back to Dashboard
             </Link>
           </div>
@@ -121,9 +121,9 @@ export default function KeywordDetail() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-gray-900 p-3 rounded border border-gray-600">
-          <p className="text-white">{`Position: #${data.position}`}</p>
-          <p className="text-spotify-gray text-sm">
+        <div className="neu-flat p-3">
+          <p style={{ color: 'var(--text-primary)' }}>{`Position: #${data.position}`}</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}
             {new Date(data.timestamp).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -143,21 +143,28 @@ export default function KeywordDetail() {
   const spotifySearchUrl = `https://open.spotify.com/search/${encodeURIComponent(keyword)}`;
 
   return (
-    <div className="min-h-screen bg-spotify-black text-white p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen py-8">
+      <div className="container">
         {/* Header */}
-        <div className="mb-8">
+        <div className="neu-card mb-8">
           <Link 
             href={`/playlist/${playlistId}`}
-            className="text-spotify-green hover:text-green-400 transition-colors mb-4 inline-block"
+            className="neu-btn mb-6 inline-flex"
           >
-            ← Back to {playlist.name}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to {playlist.name}
           </Link>
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold mb-2">"{keyword}"</h1>
-              <div className="text-spotify-gray">
+              <h1 className="text-4xl font-bold mb-2">
+                <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+                  "{keyword}"
+                </span>
+              </h1>
+              <div style={{ color: 'var(--text-secondary)' }}>
                 Ranking history from {playlist.name}
               </div>
             </div>
@@ -166,7 +173,7 @@ export default function KeywordDetail() {
               href={spotifySearchUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 bg-spotify-green text-black font-semibold rounded-full hover:bg-green-400 transition-colors"
+              className="neu-btn-primary"
             >
               🎵 Search on Spotify
             </a>
@@ -174,15 +181,15 @@ export default function KeywordDetail() {
         </div>
 
         {/* Territory Filter */}
-        <div className="mb-6">
-          <label htmlFor="territory-filter" className="block text-sm font-medium text-spotify-gray mb-2">
+        <div className="neu-flat mb-8">
+          <label htmlFor="territory-filter" className="block text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
             Filter by Territory
           </label>
           <select 
             id="territory-filter"
             value={selectedTerritory}
             onChange={(e) => setSelectedTerritory(e.target.value)}
-            className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-spotify-green"
+            className="neu-select w-full md:w-48"
           >
             <option value="all">All Territories</option>
             {territories.map(territory => (
@@ -195,43 +202,43 @@ export default function KeywordDetail() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <div className="text-spotify-gray text-sm mb-1">Current Position</div>
-            <div className="text-3xl font-bold">{currentPosition ? `#${currentPosition}` : 'N/A'}</div>
+          <div className="neu-stat">
+            <span className="neu-stat-value">{currentPosition ? `#${currentPosition}` : 'N/A'}</span>
+            <span className="neu-stat-label">Current Position</span>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <div className="text-spotify-gray text-sm mb-1">Best Position</div>
-            <div className="text-3xl font-bold text-spotify-green">#{bestPosition}</div>
+          <div className="neu-stat">
+            <span className="neu-stat-value">#{bestPosition}</span>
+            <span className="neu-stat-label">Best Position</span>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <div className="text-spotify-gray text-sm mb-1">Worst Position</div>
-            <div className="text-3xl font-bold text-red-500">#{worstPosition}</div>
+          <div className="neu-stat">
+            <span className="neu-stat-value" style={{ color: 'var(--error)' }}>#{worstPosition}</span>
+            <span className="neu-stat-label">Worst Position</span>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <div className="text-spotify-gray text-sm mb-1">Data Points</div>
-            <div className="text-3xl font-bold text-blue-400">{chartData.length}</div>
+          <div className="neu-stat">
+            <span className="neu-stat-value">{chartData.length}</span>
+            <span className="neu-stat-label">Data Points</span>
           </div>
         </div>
 
         {/* Trend Indicator */}
         {chartData.length > 1 && (
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center px-4 py-2 rounded-full text-sm">
+            <div className="neu-badge-accent inline-flex items-center">
               {trend < 0 && (
-                <div className="text-green-500">
+                <div>
                   ↗️ Improving by {Math.abs(trend)} positions (last 5 data points)
                 </div>
               )}
               {trend > 0 && (
-                <div className="text-red-500">
+                <div>
                   ↘️ Declining by {trend} positions (last 5 data points)
                 </div>
               )}
               {trend === 0 && (
-                <div className="text-yellow-500">
+                <div>
                   → Stable (last 5 data points)
                 </div>
               )}
@@ -241,7 +248,7 @@ export default function KeywordDetail() {
 
         {/* Last Updated */}
         {lastUpdated && (
-          <div className="mb-8 text-center text-spotify-gray">
+          <div className="mb-8 text-center" style={{ color: 'var(--text-secondary)' }}>
             Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -254,8 +261,12 @@ export default function KeywordDetail() {
         )}
 
         {/* Large Chart */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-6">Ranking History</h2>
+        <div className="neu-card">
+          <h2 className="text-2xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+              📈 Ranking History
+            </span>
+          </h2>
           
           {chartData.length > 0 ? (
             <div className="h-96">
@@ -285,7 +296,7 @@ export default function KeywordDetail() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-96 flex items-center justify-center text-spotify-gray">
+            <div className="h-96 flex items-center justify-center" style={{ color: 'var(--text-secondary)' }}>
               No data available for the selected territory.
             </div>
           )}

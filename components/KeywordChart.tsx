@@ -63,10 +63,10 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
 
   if (loading) {
     return (
-      <div className="card h-96">
-        <h3 className="text-xl font-bold mb-4 text-green-400">📈 Ranking History</h3>
+      <div className="neu-card h-96">
+        <h3 className="text-xl font-bold mb-4">📈 Ranking History</h3>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-transparent border-t-green-400"></div>
+          <div className="neu-spinner"></div>
         </div>
       </div>
     );
@@ -74,11 +74,13 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
 
   if (error || !history) {
     return (
-      <div className="card h-96">
-        <h3 className="text-xl font-bold mb-4 text-green-400">📈 Ranking History</h3>
+      <div className="neu-card h-96">
+        <h3 className="text-xl font-bold mb-4">📈 Ranking History</h3>
         <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-4xl mb-4">⚠️</div>
-          <div className="text-red-400">Error: {error}</div>
+          <div className="neu-inset inline-block p-3 rounded-full mb-4">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <div style={{ color: 'var(--error)' }}>Error: {error}</div>
         </div>
       </div>
     );
@@ -86,11 +88,13 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
 
   if (history.rankings.length === 0) {
     return (
-      <div className="card h-96">
-        <h3 className="text-xl font-bold mb-4 text-green-400">📈 Ranking History</h3>
+      <div className="neu-card h-96">
+        <h3 className="text-xl font-bold mb-4">📈 Ranking History</h3>
         <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-6xl mb-4">📊</div>
-          <div className="text-gray-400 text-center">
+          <div className="neu-inset inline-block p-4 rounded-full mb-4">
+            <span className="text-6xl">📊</span>
+          </div>
+          <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
             No historical data available for this keyword.
           </div>
         </div>
@@ -142,27 +146,31 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
     : 0;
 
   return (
-    <div className="card h-96">
+    <div className="neu-card h-96">
       <div className="mb-6">
-        <h3 className="text-xl font-bold mb-2 text-green-400">📈 Ranking History</h3>
-        <div className="text-sm text-gray-400">
-          <span className="font-medium text-white">"{keyword}"</span> in {territory.toUpperCase()}
+        <h3 className="text-xl font-bold mb-2">
+          <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+            📈 Ranking History
+          </span>
+        </h3>
+        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>"{keyword}"</span> in {territory.toUpperCase()}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="stat">
-          <span className="stat-value">#{currentPosition}</span>
-          <span className="stat-label">Current</span>
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="neu-flat p-3 text-center">
+          <span className="block text-lg font-bold mb-1">#{currentPosition}</span>
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Current</span>
         </div>
-        <div className="stat">
-          <span className="stat-value text-green-400">#{bestPosition}</span>
-          <span className="stat-label">Best</span>
+        <div className="neu-flat p-3 text-center">
+          <span className="block text-lg font-bold mb-1" style={{ color: 'var(--accent)' }}>#{bestPosition}</span>
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Best</span>
         </div>
-        <div className="stat">
-          <span className="stat-value text-red-400">#{worstPosition}</span>
-          <span className="stat-label">Worst</span>
+        <div className="neu-flat p-3 text-center">
+          <span className="block text-lg font-bold mb-1" style={{ color: 'var(--error)' }}>#{worstPosition}</span>
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Worst</span>
         </div>
       </div>
 
