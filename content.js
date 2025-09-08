@@ -275,11 +275,17 @@ async function processSearchResults(data) {
     
     // Check if this is a watched playlist
     if (watchedIds.includes(playlistId)) {
+      // Skip if no valid territory
+      if (!data.territory || data.territory === 'Unknown' || data.territory.length !== 2) {
+        console.log('[Content] Skipping - invalid territory:', data.territory);
+        continue;
+      }
+      
       // Include territory and minute in the session key to prevent same-minute duplicates
       const currentTime = new Date();
       const minute = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 
                              currentTime.getHours(), currentTime.getMinutes(), 0, 0).toISOString();
-      const sessionKey = `${data.keyword}-${playlistId}-${data.territory || 'Unknown'}-${minute}`;
+      const sessionKey = `${data.keyword}-${playlistId}-${data.territory}-${minute}`;
       
       // Build overlay data for ALL watched playlists (should always show)
       // IMPORTANT: Filter by territory for accurate comparison
@@ -295,7 +301,7 @@ async function processSearchResults(data) {
         playlistId,
         playlistName: item.name,
         position: item.position,
-        territory: data.territory || 'Unknown',
+        territory: data.territory,
         previousPosition: historicalData[0]?.position || null,
         bestPosition: historicalData.length > 0 
           ? Math.min(...historicalData.map(h => h.position), item.position)
@@ -327,7 +333,7 @@ async function processSearchResults(data) {
           totalResults: data.totalResults,
           capturedResults: data.capturedResults,
           timestamp: new Date().toISOString(),
-          territory: data.territory || 'Unknown',
+          territory: data.territory,
           userId: data.userId || 'unknown',
           sessionId: data.sessionId,
           id: `${playlistId}-${data.keyword}-${data.territory}-${Date.now()}`,

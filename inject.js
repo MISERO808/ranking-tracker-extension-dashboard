@@ -212,10 +212,10 @@
           }
         }
         
-        // Default to DE if still no territory found
+        // DO NOT default to any territory - wait until we have a real one
         if (!territory || territory === 'Unknown') {
-          territory = 'DE';
-          console.log('[Spotify Tracker Inject] No territory found, defaulting to DE');
+          console.log('[Spotify Tracker Inject] WARNING: No valid territory found, skipping this capture');
+          return; // Don't send data without a valid territory
         }
         
         console.log(`[Spotify Tracker Inject] Final territory: ${territory}`);

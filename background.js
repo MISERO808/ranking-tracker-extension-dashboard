@@ -153,14 +153,27 @@ async function buildPlaylistData(rankings) {
   const mainPlaylist = playlistGroups[mainPlaylistId];
   const watchedPlaylist = watchedPlaylists[mainPlaylistId];
   
+  // Filter out entries with invalid territories
+  const validRankings = mainPlaylist.rankings.filter(ranking => {
+    const territory = ranking.territory?.toLowerCase().trim();
+    // Only keep entries with valid 2-letter country codes
+    return territory && territory !== 'unknown' && territory.length === 2 && /^[a-z]{2}$/i.test(territory);
+  });
+
+  // Don't send if no valid rankings
+  if (validRankings.length === 0) {
+    console.log('[Background] No valid rankings to sync (all have invalid territories)');
+    return null;
+  }
+
   return {
     id: mainPlaylistId,
     name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
     image: mainPlaylist.playlist.playlistImage || '',
-    keywords: mainPlaylist.rankings.map(ranking => ({
+    keywords: validRankings.map(ranking => ({
       keyword: ranking.keyword,
       position: ranking.position,
-      territory: ranking.territory || 'de',
+      territory: ranking.territory.toLowerCase().trim(), // Normalize to lowercase
       timestamp: ranking.timestamp,
       userId: ranking.userId,
       sessionId: ranking.sessionId
