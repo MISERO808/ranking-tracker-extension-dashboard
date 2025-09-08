@@ -16,6 +16,7 @@ export default function PlaylistDetail() {
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('');
+  const [countryFilterInitialized, setCountryFilterInitialized] = useState(false);
   const [starredKeywords, setStarredKeywords] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [positionFilter, setPositionFilter] = useState<{ min: string; max: string }>({ min: '', max: '' });
@@ -111,8 +112,8 @@ export default function PlaylistDetail() {
         setPlaylist(data);
       }
       
-      // Only set initial country filter, never update it after user selection
-      if (!selectedCountryFilter && data.keywords.length > 0) {
+      // Only set initial country filter ONCE
+      if (!countryFilterInitialized && data.keywords.length > 0) {
         const territories = Array.from(new Set(
           data.keywords
             .map((k: any) => k.territory?.toLowerCase().trim())
@@ -125,6 +126,7 @@ export default function PlaylistDetail() {
         } else if (territories.length > 0) {
           setSelectedCountryFilter(territories[0] as string);
         }
+        setCountryFilterInitialized(true);
       }
       
       setError(null);
@@ -200,10 +202,8 @@ export default function PlaylistDetail() {
             </div>
             
             <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4">
-                <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  {playlist.name}
-                </span>
+              <h1 className="text-5xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                {playlist.name}
               </h1>
               <div className="flex gap-8 mb-6" style={{ color: 'var(--text-secondary)' }}>
                 <span className="flex items-center gap-2">

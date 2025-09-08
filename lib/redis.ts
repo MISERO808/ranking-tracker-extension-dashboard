@@ -84,6 +84,14 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     
     console.log(`[Redis] Filtered existing data: ${existingData.keywords.length} → ${validExistingKeywords.length} keywords`);
     
+    // IMPORTANT: Preserve image from existing data if new data doesn't have it
+    if (!data.image && existingData.image) {
+      data.image = existingData.image;
+      console.log(`[Redis] Preserving existing image: ${existingData.image}`);
+    } else if (data.image) {
+      console.log(`[Redis] Using new image: ${data.image}`);
+    }
+    
     // Merge new keywords with CLEANED existing ones
     // CRITICAL: Normalize territory to lowercase in the key to prevent duplicates like "DE" vs "de"
     const existingKeywordsMap = new Map(validExistingKeywords.map(k => 
