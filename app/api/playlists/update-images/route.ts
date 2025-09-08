@@ -87,8 +87,8 @@ export async function POST() {
 
 // GET endpoint to check Spotify API configuration
 export async function GET() {
-  const hasClientId = !!process.env.SPOTIFY_CLIENT_ID;
-  const hasClientSecret = !!process.env.SPOTIFY_CLIENT_SECRET;
+  const hasClientId = !!process.env.SPOTIFY_CLIENT_ID || !!process.env.Spotify_API_Client_ID;
+  const hasClientSecret = !!process.env.SPOTIFY_CLIENT_SECRET || !!process.env.Spotify_API_Client_Secret;
   
   if (!hasClientId || !hasClientSecret) {
     return NextResponse.json({

@@ -29,11 +29,12 @@ async function getSpotifyToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  // Support both naming conventions
+  const clientId = process.env.SPOTIFY_CLIENT_ID || process.env.Spotify_API_Client_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET || process.env.Spotify_API_Client_Secret;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Spotify credentials not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to .env.local');
+    throw new Error('Spotify credentials not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET (or Spotify_API_Client_ID and Spotify_API_Client_Secret) to environment variables');
   }
 
   const response = await fetch('https://accounts.spotify.com/api/token', {
