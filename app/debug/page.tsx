@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function DebugPage() {
@@ -8,6 +8,40 @@ export default function DebugPage() {
   const [imageUrl, setImageUrl] = useState('');
   const [status, setStatus] = useState('');
   const [playlistInfo, setPlaylistInfo] = useState<any>(null);
+  const [allPlaylists, setAllPlaylists] = useState<any[]>([]);
+  const [updateAllStatus, setUpdateAllStatus] = useState('');
+  
+  useEffect(() => {
+    fetchAllPlaylists();
+  }, []);
+  
+  const fetchAllPlaylists = async () => {
+    try {
+      const response = await fetch('/api/playlists');
+      const data = await response.json();
+      setAllPlaylists(data);
+    } catch (error) {
+      console.error('Failed to fetch playlists');
+    }
+  };
+  
+  const updateAllImages = async () => {
+    setUpdateAllStatus('🔄 Updating all images...');
+    try {
+      const response = await fetch('/api/playlists/update-images', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUpdateAllStatus(`✅ Updated ${data.updated} playlists, ${data.failed} failed`);
+        fetchAllPlaylists();
+      } else {
+        setUpdateAllStatus(`❌ ${data.error}`);
+      }
+    } catch (error) {
+      setUpdateAllStatus('❌ Failed to update');
+    }
+  };
 
   const checkPlaylist = async () => {
     try {
@@ -54,7 +88,46 @@ export default function DebugPage() {
             Back to Dashboard
           </Link>
           
-          <h1 className="text-3xl font-bold mb-6">Debug: Set Playlist Image</h1>
+          <h1 className="text-3xl font-bold mb-6">Debug: Playlist Images</h1>
+          
+          {/* Update All Button */}
+          <div className="neu-flat mb-6">
+            <h2 className="text-xl font-semibold mb-4">Update All Missing Images</h2>
+            <button onClick={updateAllImages} className="neu-btn-primary">
+              🎨 Fetch All Missing Images from Spotify
+            </button>
+            {updateAllStatus && (
+              <p className="mt-2 text-sm">{updateAllStatus}</p>
+            )}
+          </div>
+          
+          {/* List of Playlists */}
+          <div className="neu-flat mb-6">
+            <h2 className="text-xl font-semibold mb-4">Current Playlists</h2>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {allPlaylists.map(p => (
+                <div key={p.id} className="flex items-center gap-2 p-2 rounded" style={{ background: 'var(--bg-color)' }}>
+                  {p.image ? (
+                    <img src={p.image} alt="" className="w-8 h-8 rounded" />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-gray-300" />
+                  )}
+                  <span className="flex-1">{p.name}</span>
+                  <button 
+                    onClick={() => {
+                      setPlaylistId(p.id);
+                      checkPlaylist();
+                    }}
+                    className="text-sm neu-btn"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <h2 className="text-xl font-semibold mb-4">Manual Image Update</h2>
           
           <div className="space-y-4 max-w-2xl">
             <div>
