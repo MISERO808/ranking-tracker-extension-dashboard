@@ -62,10 +62,17 @@ export default function KeywordTable({
 
   // For each unique keyword, get the latest/best ranking for display
   const deduplicatedKeywords: DeduplicatedKeyword[] = Object.entries(keywordGroups).map(([normalizedKey, rankings]) => {
-    // Filter by selected country first if specified
-    const filteredRankings = selectedCountryFilter 
-      ? rankings.filter(r => r.territory.toLowerCase() === selectedCountryFilter.toLowerCase())
-      : rankings;
+    // Filter out invalid territories and apply country filter
+    let filteredRankings = rankings.filter(r => {
+      const territory = r.territory?.toLowerCase().trim();
+      return territory && territory !== 'unknown' && territory.length === 2;
+    });
+    
+    if (selectedCountryFilter && selectedCountryFilter !== 'all') {
+      filteredRankings = filteredRankings.filter(r => 
+        r.territory?.toLowerCase().trim() === selectedCountryFilter.toLowerCase()
+      );
+    }
       
     if (filteredRankings.length === 0) return null;
     
@@ -121,12 +128,12 @@ export default function KeywordTable({
     return (
       <tr 
         key={keyword.normalizedKeyword}
-        className={`border-b border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors ${
-          isSelected ? 'bg-spotify-green bg-opacity-20' : ''
+        className={`cursor-pointer transition-colors ${
+          isSelected ? 'bg-green-500 bg-opacity-20' : ''
         }`}
         onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}
       >
-        <td className="py-3 px-2">
+        <td className="py-4 px-4">
           <span className={`font-bold ${
             keyword.position <= 10 
               ? 'text-spotify-green' 
@@ -138,14 +145,14 @@ export default function KeywordTable({
           </span>
         </td>
         
-        <td className="py-3 px-2 font-medium">
-          <div className="flex items-center gap-2">
+        <td className="py-4 px-4 font-medium">
+          <div className="flex items-center gap-3">
             <span className="cursor-pointer" onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}>
               {keyword.keyword}
             </span>
             <Link 
               href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
-              className="text-spotify-green hover:text-green-400 transition-colors text-sm"
+              className="text-green-400 hover:text-green-300 transition-colors text-sm"
               title="View detailed history"
             >
               📊
@@ -153,11 +160,11 @@ export default function KeywordTable({
           </div>
         </td>
         
-        <td className="py-3 px-2 text-lg">
+        <td className="py-4 px-4 text-lg">
           {getTrendIcon(keyword.trend)}
         </td>
         
-        <td className="py-3 px-2 text-sm text-spotify-gray">
+        <td className="py-4 px-4 text-sm text-gray-400">
           {new Date(keyword.timestamp).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -166,11 +173,11 @@ export default function KeywordTable({
           })}
         </td>
         
-        <td className="py-3 px-2 text-center">
+        <td className="py-4 px-4 text-center">
           <button 
             className={`text-lg hover:scale-110 transition-transform ${
               isStarred 
-                ? 'text-yellow-500' 
+                ? 'text-yellow-400' 
                 : 'text-gray-500 hover:text-yellow-400'
             }`}
             onClick={(e) => {
@@ -183,9 +190,9 @@ export default function KeywordTable({
           </button>
         </td>
         
-        <td className="py-3 px-2 text-center">
+        <td className="py-4 px-4 text-center">
           <button 
-            className="text-red-500 hover:text-red-400 text-lg hover:scale-110 transition-transform"
+            className="text-red-400 hover:text-red-300 text-lg hover:scale-110 transition-transform"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteKeyword?.(keyword.keyword);
@@ -204,15 +211,15 @@ export default function KeywordTable({
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-3 text-spotify-green">{title}</h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full keyword-table">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">Rank</th>
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">Keyword</th>
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">Trend</th>
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">Last Updated</th>
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">⭐</th>
-                <th className="text-left py-3 px-2 text-spotify-gray font-medium">🗑️</th>
+              <tr>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Rank</th>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Keyword</th>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Trend</th>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">Last Updated</th>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">⭐</th>
+                <th className="text-left py-4 px-4 text-gray-300 font-semibold">🗑️</th>
               </tr>
             </thead>
             <tbody>
@@ -225,9 +232,9 @@ export default function KeywordTable({
   );
   
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">
-        Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
+    <div className="card">
+      <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+        📊 Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
       </h2>
       
       {renderKeywordSection(sortedStarredKeywords, `⭐ Starred Keywords (${sortedStarredKeywords.length})`)}

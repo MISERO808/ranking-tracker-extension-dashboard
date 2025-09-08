@@ -2,26 +2,166 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+:root {
+    --spotify-green: #1DB954;
+    --spotify-black: #191414;
+    --gray-dark: #282828;
+    --gray-medium: #535353;
+    --gray-light: #B3B3B3;
+    --white: #FFFFFF;
+    --surface: #121212;
+    --surface-raised: #1A1A1A;
+    --error: #E22134;
+    --success: #1DB954;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--white);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Cards & Surfaces */
+.card {
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(29, 185, 84, 0.3);
+    border-color: var(--spotify-green);
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--spotify-green);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: var(--surface-raised);
+    color: var(--white);
+    border: 1px solid var(--gray-medium);
+}
+
+.btn-secondary:hover {
+    background: var(--gray-dark);
+}
+
+/* Stats Display */
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--spotify-green);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--gray-light);
+    text-transform: uppercase;
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--surface-raised);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+}
+
+/* Glassmorphism elements */
+.glass {
+    background: rgba(26, 26, 26, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-bright {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Form elements */
+select option {
+    background: var(--surface-raised);
+    color: var(--white);
+}
+
+/* Table styling */
+.keyword-table {
+    background: rgba(26, 26, 26, 0.5);
+    backdrop-filter: blur(5px);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.keyword-table thead {
+    background: rgba(29, 185, 84, 0.1);
+}
+
+.keyword-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
 }

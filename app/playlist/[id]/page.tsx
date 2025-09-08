@@ -75,15 +75,22 @@ export default function PlaylistDetail() {
       console.error('Error deleting keyword:', error);
       alert('Failed to delete keyword. Please try again.');
       // Refresh the playlist to get the correct state
-      fetchPlaylist();
+      fetchPlaylist(false);
     }
   };
 
   useEffect(() => {
-    fetchPlaylist();
+    fetchPlaylist(true);
+    
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchPlaylist(false);
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, [playlistId]);
 
-  const fetchPlaylist = async () => {
+  const fetchPlaylist = async (isInitial = false) => {
     try {
       const response = await fetch(`/api/playlists/${playlistId}`);
       if (!response.ok) {
@@ -94,11 +101,21 @@ export default function PlaylistDetail() {
       }
       
       const data = await response.json();
-      setPlaylist(data);
+      
+      // Only update if data has changed
+      const dataString = JSON.stringify(data);
+      const currentString = JSON.stringify(playlist);
+      if (dataString !== currentString) {
+        setPlaylist(data);
+      }
+      
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setLoading(false);
+      }
     }
   };
 
@@ -133,63 +150,91 @@ export default function PlaylistDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-spotify-black text-white p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
+      <div className="container">
         {/* Header */}
-        <div className="mb-8">
+        <div className="card mb-8">
           <Link 
             href="/" 
-            className="text-spotify-green hover:text-green-400 transition-colors mb-4 inline-block"
+            className="btn btn-secondary mb-6 w-fit"
           >
-            ← Back to Dashboard
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
           </Link>
           
-          <div className="flex items-start gap-6">
+          <div className="flex items-start gap-8">
             {playlist.image && (
-              <img 
-                src={playlist.image}
-                alt={playlist.name}
-                className="w-32 h-32 rounded-lg object-cover"
-              />
+              <div className="relative">
+                <img 
+                  src={playlist.image}
+                  alt={playlist.name}
+                  className="w-40 h-40 rounded-2xl object-cover shadow-2xl"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
             )}
             
-            <div>
-              <h1 className="text-4xl font-bold mb-2">{playlist.name}</h1>
-              <div className="flex gap-6 text-spotify-gray">
-                <span>{playlist.keywords.length} keywords tracked</span>
-                <span>Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}</span>
+            <div className="flex-1">
+              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                {playlist.name}
+              </h1>
+              <div className="flex gap-8 text-gray-300 mb-6">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                  {playlist.keywords.length} keywords tracked
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}
+                </span>
               </div>
               
               {/* Country Filter Dropdown */}
-              <div className="mt-4">
-                <label htmlFor="country-filter" className="block text-sm font-medium text-spotify-gray mb-2">
+              <div className="mb-4">
+                <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 mb-2">
                   Filter by Country
                 </label>
                 <select 
                   id="country-filter"
                   value={selectedCountryFilter}
                   onChange={(e) => setSelectedCountryFilter(e.target.value)}
-                  className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-spotify-green"
+                  className="glass rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400 w-48"
                 >
                   <option value="all">All Countries</option>
-                  {Array.from(new Set(playlist.keywords.map(k => k.territory.toLowerCase()))).sort().map(territory => (
-                    <option key={territory} value={territory}>
-                      {territory.toUpperCase()}
-                    </option>
-                  ))}
+                  {(() => {
+                    const territories = Array.from(new Set(
+                      playlist.keywords
+                        .map(k => k.territory?.toLowerCase().trim())
+                        .filter(t => t && t !== 'unknown' && t.length === 2) // Only valid 2-letter codes
+                    )).sort();
+                    return territories.map(territory => (
+                      <option key={territory} value={territory}>
+                        {territory.toUpperCase()}
+                      </option>
+                    ));
+                  })()}
                 </select>
               </div>
               
               {/* Territories Display */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                {Array.from(new Set(playlist.keywords.map(k => k.territory.toLowerCase()))).map(territory => (
-                  <span 
-                    key={territory}
-                    className="px-3 py-1 bg-spotify-green bg-opacity-20 text-spotify-green text-sm rounded"
-                  >
-                    {territory.toUpperCase()}
-                  </span>
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  const territories = Array.from(new Set(
+                    playlist.keywords
+                      .map(k => k.territory?.toLowerCase().trim())
+                      .filter(t => t && t !== 'unknown' && t.length === 2) // Only valid 2-letter codes
+                  )).sort();
+                  return territories.map(territory => (
+                    <span 
+                      key={territory}
+                      className="glass-bright px-3 py-1 text-sm rounded-full font-medium"
+                    >
+                      {territory.toUpperCase()}
+                    </span>
+                  ));
+                })()}
               </div>
             </div>
           </div>
@@ -224,10 +269,10 @@ export default function PlaylistDetail() {
                 allKeywords={playlist.keywords}
               />
             ) : (
-              <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">
-                <div className="text-center text-spotify-gray">
-                  <div className="text-lg mb-2">📈</div>
-                  <div>Select a keyword to view ranking history</div>
+              <div className="card h-96 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📈</div>
+                  <div className="text-gray-400 text-lg">Select a keyword to view ranking history</div>
                 </div>
               </div>
             )}

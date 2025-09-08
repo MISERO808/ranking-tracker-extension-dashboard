@@ -26,66 +26,69 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
   };
 
   return (
-    <Link href={`/playlist/${playlist.id}`}>
-      <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors cursor-pointer group">
+    <Link href={`/playlist/${playlist.id}`} className="block">
+      <div className="card group cursor-pointer overflow-hidden">
         {/* Playlist Image */}
         {playlist.image && (
-          <div className="mb-4">
+          <div className="mb-6 -mx-8 -mt-8 relative overflow-hidden">
             <img 
               src={playlist.image} 
               alt={playlist.name}
-              className="w-full aspect-square object-cover rounded-lg"
+              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
             />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50" />
           </div>
         )}
         
         {/* Playlist Name */}
-        <h2 className="text-xl font-semibold mb-4 group-hover:text-spotify-green transition-colors">
+        <h2 className="text-2xl font-bold mb-6 group-hover:text-green-400 transition-colors">
           {playlist.name}
         </h2>
         
-        {/* Stats */}
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-spotify-gray">Total keywords:</span>
-            <span className="text-white font-medium">{totalKeywords}</span>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="stat">
+            <span className="stat-value">{totalKeywords}</span>
+            <span className="stat-label">Keywords</span>
           </div>
           
-          <div className="flex justify-between">
-            <span className="text-spotify-gray">Best position:</span>
-            <span className="text-white font-medium">
+          <div className="stat">
+            <span className="stat-value">
               {bestPosition ? `#${bestPosition}` : 'N/A'}
             </span>
+            <span className="stat-label">Best Rank</span>
           </div>
           
-          <div className="flex justify-between">
-            <span className="text-spotify-gray">Average position:</span>
-            <span className="text-white font-medium">
+          <div className="stat">
+            <span className="stat-value">
               {averagePosition ? `#${averagePosition}` : 'N/A'}
             </span>
+            <span className="stat-label">Avg Rank</span>
           </div>
           
-          <div className="flex justify-between">
-            <span className="text-spotify-gray">Last updated:</span>
-            <span className="text-white font-medium">
-              {formatDate(playlist.lastUpdated)}
+          <div className="stat">
+            <span className="stat-value text-sm">
+              {formatDate(playlist.lastUpdated).split(' ')[0]}
             </span>
+            <span className="stat-label">Updated</span>
           </div>
         </div>
         
         {/* Territories indicator */}
         {totalKeywords > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <div className="flex flex-wrap gap-1">
-              {Array.from(new Set(playlist.keywords.map(k => k.territory))).map(territory => (
-                <span 
-                  key={territory}
-                  className="px-2 py-1 bg-spotify-green bg-opacity-20 text-spotify-green text-xs rounded"
-                >
-                  {territory.toUpperCase()}
-                </span>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(new Set(
+              playlist.keywords
+                .map(k => k.territory?.toLowerCase().trim())
+                .filter(t => t && t !== 'unknown' && t.length === 2)
+            )).map(territory => (
+              <span 
+                key={territory}
+                className="glass-bright px-3 py-1 text-xs rounded-full font-medium"
+              >
+                {territory?.toUpperCase()}
+              </span>
+            ))}
           </div>
         )}
       </div>
