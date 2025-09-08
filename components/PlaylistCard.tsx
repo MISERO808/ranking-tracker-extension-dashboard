@@ -20,14 +20,6 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
     ? Math.round(playlist.keywords.reduce((sum, k) => sum + k.position, 0) / playlist.keywords.length)
     : null;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <Link href={`/playlist/${playlist.id}`} className="block">
@@ -45,7 +37,7 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
         
         {/* If no image, show placeholder */}
         {!playlist.image && (
-          <div className="neu-inset rounded-xl mb-6 overflow-hidden aspect-square flex items-center justify-center">
+          <div className="neu-inset rounded-xl mb-6 overflow-hidden aspect-square flex items-center justify-center" style={{ background: 'var(--bg-color)' }}>
             <svg className="w-20 h-20" style={{ color: 'var(--text-secondary)', opacity: 0.3 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
@@ -78,13 +70,6 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
               {averagePosition ? `#${averagePosition}` : 'N/A'}
             </span>
             <span className="neu-stat-label">Avg Rank</span>
-          </div>
-          
-          <div className="neu-stat">
-            <span className="neu-stat-value text-base">
-              {formatDate(playlist.lastUpdated).split(' ')[0]}
-            </span>
-            <span className="neu-stat-label">Updated</span>
           </div>
         </div>
         

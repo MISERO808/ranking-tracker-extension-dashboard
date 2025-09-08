@@ -96,8 +96,7 @@ export default function PlaylistGrid() {
     <div>
       {/* Status indicator */}
       {lastUpdated && (
-        <div className="neu-badge-accent mx-auto mb-8 text-sm text-center w-fit flex items-center gap-2">
-          <span className="animate-pulse">●</span> 
+        <div className="mx-auto mb-8 text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
           Last updated: {lastUpdated.toLocaleTimeString()} • Auto-refreshing every 5s
         </div>
       )}

@@ -183,15 +183,21 @@ export default function PlaylistDetail() {
           </Link>
           
           <div className="flex items-start gap-8">
-            {playlist.image && (
-              <div className="neu-inset rounded-2xl overflow-hidden w-40 h-40">
+            <div className="neu-inset rounded-2xl overflow-hidden w-40 h-40 flex-shrink-0">
+              {playlist.image && playlist.image !== '' ? (
                 <img 
                   src={playlist.image}
                   alt={playlist.name}
                   className="w-full h-full object-cover"
                 />
-              </div>
-            )}
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-color)' }}>
+                  <svg className="w-16 h-16" style={{ color: 'var(--text-secondary)', opacity: 0.3 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+              )}
+            </div>
             
             <div className="flex-1">
               <h1 className="text-5xl font-bold mb-4 emoji">
