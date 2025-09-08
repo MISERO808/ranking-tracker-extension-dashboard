@@ -176,18 +176,18 @@ export default function PlaylistDetail() {
             )}
             
             <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold mb-4 emoji">
+                <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {playlist.name}
                 </span>
               </h1>
               <div className="flex gap-8 mb-6" style={{ color: 'var(--text-secondary)' }}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)' }}></span>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--lilac)' }}></span>
                   {playlist.keywords.length} keywords tracked
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }}></span>
+                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--lilac-light)' }}></span>
                   Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}
                 </span>
               </div>
@@ -273,7 +273,7 @@ export default function PlaylistDetail() {
               <div className="neu-card h-96 flex items-center justify-center">
                 <div className="text-center">
                   <div className="neu-inset inline-block p-4 rounded-full mb-4">
-                    <span className="text-6xl">📈</span>
+                    <span className="text-6xl emoji">📈</span>
                   </div>
                   <div className="text-lg" style={{ color: 'var(--text-secondary)' }}>Select a keyword to view ranking history</div>
                 </div>

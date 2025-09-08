@@ -40,8 +40,8 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
         )}
         
         {/* Playlist Name */}
-        <h2 className="text-2xl font-bold mb-6 transition-colors">
-          <span className="group-hover:bg-gradient-to-r group-hover:from-green-500 group-hover:to-green-400 group-hover:bg-clip-text group-hover:text-transparent">
+        <h2 className="text-2xl font-bold mb-6 transition-colors emoji">
+          <span className="group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-purple-300 group-hover:bg-clip-text group-hover:text-transparent">
             {playlist.name}
           </span>
         </h2>

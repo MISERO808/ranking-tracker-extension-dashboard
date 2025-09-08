@@ -6,10 +6,10 @@ export default function Home() {
       <div className="container">
         <div className="neu-card mb-12 text-center">
           <div className="neu-inset inline-block p-4 rounded-full mb-6">
-            <span className="text-6xl">🎵</span>
+            <span className="text-6xl emoji">🎵</span>
           </div>
           <h1 className="text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+            <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Spotify Ranking Tracker
             </span>
           </h1>

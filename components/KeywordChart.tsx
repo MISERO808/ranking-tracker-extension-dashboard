@@ -78,7 +78,7 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
         <h3 className="text-xl font-bold mb-4">📈 Ranking History</h3>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="neu-inset inline-block p-3 rounded-full mb-4">
-            <span className="text-4xl">⚠️</span>
+            <span className="text-4xl emoji">⚠️</span>
           </div>
           <div style={{ color: 'var(--error)' }}>Error: {error}</div>
         </div>
@@ -92,7 +92,7 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
         <h3 className="text-xl font-bold mb-4">📈 Ranking History</h3>
         <div className="flex flex-col justify-center items-center h-64">
           <div className="neu-inset inline-block p-4 rounded-full mb-4">
-            <span className="text-6xl">📊</span>
+            <span className="text-6xl emoji">📊</span>
           </div>
           <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
             No historical data available for this keyword.
@@ -149,8 +149,8 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
     <div className="neu-card h-96">
       <div className="mb-6">
         <h3 className="text-xl font-bold mb-2">
-          <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
-            📈 Ranking History
+          <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span className="emoji">📈</span> Ranking History
           </span>
         </h3>
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -165,7 +165,7 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Current</span>
         </div>
         <div className="neu-flat p-3 text-center">
-          <span className="block text-lg font-bold mb-1" style={{ color: 'var(--accent)' }}>#{bestPosition}</span>
+          <span className="block text-lg font-bold mb-1" style={{ color: 'var(--lilac)' }}>#{bestPosition}</span>
           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Best</span>
         </div>
         <div className="neu-flat p-3 text-center">

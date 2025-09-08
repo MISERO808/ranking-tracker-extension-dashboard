@@ -134,13 +134,13 @@ export default function KeywordTable({
         onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}
       >
         <td className="py-4 px-4">
-          <span className={`font-bold ${
-            keyword.position <= 10 
-              ? 'text-spotify-green' 
+          <span className="font-bold" style={{ 
+            color: keyword.position <= 10 
+              ? 'var(--lilac)' 
               : keyword.position <= 50 
-              ? 'text-yellow-500' 
-              : 'text-white'
-          }`}>
+              ? 'var(--warning)' 
+              : 'var(--text-primary)'
+          }}>
             #{keyword.position}
           </span>
         </td>
@@ -152,7 +152,8 @@ export default function KeywordTable({
             </span>
             <Link 
               href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
-              className="text-green-400 hover:text-green-300 transition-colors text-sm"
+              className="transition-colors text-sm emoji"
+              style={{ color: 'var(--lilac)' }}
               title="View detailed history"
             >
               📊
@@ -209,7 +210,7 @@ export default function KeywordTable({
   const renderKeywordSection = (keywords: DeduplicatedKeyword[], title: string) => (
     keywords.length > 0 && (
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3 text-spotify-green">{title}</h3>
+        <h3 className="text-lg font-semibold mb-3 emoji" style={{ color: 'var(--lilac-dark)' }}>{title}</h3>
         <div className="overflow-x-auto">
           <table className="w-full neu-table">
             <thead>
@@ -234,8 +235,8 @@ export default function KeywordTable({
   return (
     <div className="neu-card">
       <h2 className="text-2xl font-bold mb-6">
-        <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
-          📊 Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
+        <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span className="emoji">📊</span> Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
         </span>
       </h2>
       

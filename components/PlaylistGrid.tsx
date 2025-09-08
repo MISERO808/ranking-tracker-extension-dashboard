@@ -59,7 +59,7 @@ export default function PlaylistGrid() {
     return (
       <div className="neu-card text-center py-16">
         <div className="neu-inset inline-block p-4 rounded-full mb-6">
-          <span className="text-6xl">⚠️</span>
+          <span className="text-6xl emoji">⚠️</span>
         </div>
         <div className="text-xl mb-6" style={{ color: 'var(--error)' }}>Error: {error}</div>
         <button 
@@ -79,7 +79,7 @@ export default function PlaylistGrid() {
     return (
       <div className="neu-card text-center py-16">
         <div className="neu-inset inline-block p-6 rounded-full mb-6">
-          <span className="text-8xl">🎵</span>
+          <span className="text-8xl emoji">🎵</span>
         </div>
         <h2 className="text-3xl font-bold mb-4">No playlists tracked yet</h2>
         <p className="mb-2 max-w-md mx-auto" style={{ color: 'var(--text-secondary)' }}>

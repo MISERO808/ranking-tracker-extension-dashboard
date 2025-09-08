@@ -160,7 +160,7 @@ export default function KeywordDetail() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">
-                <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+                <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   "{keyword}"
                 </span>
               </h1>
@@ -175,7 +175,7 @@ export default function KeywordDetail() {
               rel="noopener noreferrer"
               className="neu-btn-primary"
             >
-              🎵 Search on Spotify
+              <span className="emoji">🎵</span> Search on Spotify
             </a>
           </div>
         </div>
@@ -263,8 +263,8 @@ export default function KeywordDetail() {
         {/* Large Chart */}
         <div className="neu-card">
           <h2 className="text-2xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
-              📈 Ranking History
+            <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span className="emoji">📈</span> Ranking History
             </span>
           </h2>
           
