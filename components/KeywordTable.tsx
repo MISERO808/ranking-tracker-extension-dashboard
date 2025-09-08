@@ -14,7 +14,7 @@ interface KeywordTableProps {
   playlistId: string;
 }
 
-interface DeduplicatedKeyword extends KeywordRanking {
+interface DeduplicatedKeyword extends Omit<KeywordRanking, 'trend'> {
   territories: string[];
   allRankings: KeywordRanking[];
   normalizedKeyword: string;
