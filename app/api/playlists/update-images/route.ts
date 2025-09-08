@@ -16,8 +16,8 @@ export async function POST() {
     
     for (const playlist of playlists) {
       try {
-        // Skip if already has an image
-        if (playlist.image) {
+        // Skip if already has a valid image
+        if (playlist.image && playlist.image.trim() !== '') {
           console.log(`Playlist ${playlist.name} already has an image, skipping`);
           results.push({
             id: playlist.id,
