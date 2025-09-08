@@ -7,10 +7,10 @@ interface KeywordTableProps {
   keywords: KeywordRanking[];
   onKeywordSelect: (keyword: string, territory: string) => void;
   selectedKeyword: string | null;
-  selectedCountryFilter?: string;
-  starredKeywords?: string[];
+  selectedCountryFilter: string | null;
   onToggleStar?: (keyword: string) => void;
   onDeleteKeyword?: (keyword: string) => void;
+  starredKeywords?: string[];
   playlistId: string;
 }
 
@@ -18,13 +18,17 @@ interface DeduplicatedKeyword extends KeywordRanking {
   territories: string[];
   allRankings: KeywordRanking[];
   normalizedKeyword: string;
+  previousPosition?: number;
+  trend?: 'up' | 'down' | 'stable' | 'new';
+  change?: number;
 }
 
-const getTrendIcon = (trend?: 'up' | 'down' | 'stable') => {
+const getTrendIcon = (trend?: 'up' | 'down' | 'stable' | 'new', change?: number) => {
   switch (trend) {
-    case 'up': return <span className="text-green-500">↑</span>;
-    case 'down': return <span className="text-red-500">↓</span>;
-    case 'stable': return <span className="text-yellow-500">→</span>;
+    case 'up': return <span style={{ color: 'var(--lilac)' }}>↑{change ? Math.abs(change) : ''}</span>;
+    case 'down': return <span style={{ color: 'var(--lilac)' }}>↓{change ? Math.abs(change) : ''}</span>;
+    case 'stable': return <span style={{ color: 'var(--lilac)' }}>→</span>;
+    case 'new': return <span style={{ color: 'var(--lilac)' }}>✨</span>;
     default: return null;
   }
 };
@@ -32,18 +36,18 @@ const getTrendIcon = (trend?: 'up' | 'down' | 'stable') => {
 export default function KeywordTable({ 
   keywords, 
   onKeywordSelect, 
-  selectedKeyword,
+  selectedKeyword, 
   selectedCountryFilter,
-  starredKeywords = [],
   onToggleStar,
   onDeleteKeyword,
+  starredKeywords = [],
   playlistId
 }: KeywordTableProps) {
   if (keywords.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6">
+      <div className="neu-card">
         <h2 className="text-xl font-semibold mb-4">Keywords</h2>
-        <div className="text-center py-8 text-spotify-gray">
+        <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
           No keywords tracked for this playlist yet.
         </div>
       </div>
@@ -68,21 +72,18 @@ export default function KeywordTable({
       return territory && territory !== 'unknown' && territory.length === 2;
     });
     
-    if (selectedCountryFilter && selectedCountryFilter !== 'all') {
+    if (selectedCountryFilter) {
       filteredRankings = filteredRankings.filter(r => 
         r.territory?.toLowerCase().trim() === selectedCountryFilter.toLowerCase()
       );
     }
-      
+    
     if (filteredRankings.length === 0) return null;
     
-    // Sort by timestamp (most recent first) then by best position
-    const sortedRankings = filteredRankings.sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime();
-      const timeB = new Date(b.timestamp).getTime();
-      if (timeA !== timeB) return timeB - timeA; // Most recent first
-      return a.position - b.position; // Then best position
-    });
+    // Sort by timestamp to get the most recent ranking
+    const sortedRankings = [...filteredRankings].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
     
     const displayRanking = sortedRankings[0]; // Use most recent
     const territories = Array.from(new Set(rankings.map(r => r.territory.toLowerCase())));
@@ -94,12 +95,27 @@ export default function KeywordTable({
       capitalizations.filter(k => k === acc).length ? curr : acc
     );
     
+    // Calculate trend by comparing with previous data point
+    const previousRanking = sortedRankings[1];
+    let trend: 'up' | 'down' | 'stable' | 'new' = 'new';
+    let change = 0;
+    
+    if (previousRanking) {
+      change = previousRanking.position - displayRanking.position;
+      if (change > 0) trend = 'up';
+      else if (change < 0) trend = 'down';
+      else trend = 'stable';
+    }
+    
     return {
       ...displayRanking,
       keyword: displayKeyword, // Use normalized display keyword
       territories,
       allRankings: rankings, // Keep all rankings for history
-      normalizedKeyword: normalizedKey // Store normalized version for comparisons
+      normalizedKeyword: normalizedKey, // Store normalized version for comparisons
+      previousPosition: previousRanking?.position,
+      trend,
+      change
     };
   }).filter(Boolean) as DeduplicatedKeyword[];
 
@@ -129,43 +145,29 @@ export default function KeywordTable({
       <tr 
         key={keyword.normalizedKeyword}
         className={`cursor-pointer transition-colors ${
-          isSelected ? 'bg-green-500 bg-opacity-20' : ''
+          isSelected ? 'neu-inset' : ''
         }`}
-        onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}
       >
         <td className="py-4 px-4">
-          <span className="font-bold" style={{ 
-            color: keyword.position <= 10 
-              ? 'var(--lilac)' 
-              : keyword.position <= 50 
-              ? 'var(--warning)' 
-              : 'var(--text-primary)'
-          }}>
-            #{keyword.position}
-          </span>
-        </td>
-        
-        <td className="py-4 px-4 font-medium">
-          <div className="flex items-center gap-3">
-            <span className="cursor-pointer" onClick={() => onKeywordSelect(keyword.keyword, selectedCountryFilter || keyword.territory)}>
-              {keyword.keyword}
+          <div className="flex items-center gap-2">
+            <span className="font-bold" style={{ color: 'var(--lilac)' }}>
+              #{keyword.position}
             </span>
-            <Link 
-              href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
-              className="transition-colors text-sm emoji"
-              style={{ color: 'var(--lilac)' }}
-              title="View detailed history"
-            >
-              📊
-            </Link>
+            {getTrendIcon(keyword.trend, keyword.change)}
           </div>
         </td>
         
-        <td className="py-4 px-4 text-lg">
-          {getTrendIcon(keyword.trend)}
+        <td className="py-4 px-4 font-medium">
+          <Link 
+            href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
+            className="hover:opacity-70 transition-opacity"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {keyword.keyword}
+          </Link>
         </td>
         
-        <td className="py-4 px-4 text-sm text-gray-400">
+        <td className="py-4 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
           {new Date(keyword.timestamp).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -174,80 +176,99 @@ export default function KeywordTable({
           })}
         </td>
         
-        <td className="py-4 px-4 text-center">
-          <button 
-            className={`text-lg hover:scale-110 transition-transform ${
-              isStarred 
-                ? 'text-yellow-400' 
-                : 'text-gray-500 hover:text-yellow-400'
-            }`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar?.(keyword.keyword);
-            }}
-            title={isStarred ? 'Remove star' : 'Add star'}
-          >
-            {isStarred ? '★' : '☆'}
-          </button>
-        </td>
-        
-        <td className="py-4 px-4 text-center">
-          <button 
-            className="text-red-400 hover:text-red-300 text-lg hover:scale-110 transition-transform"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteKeyword?.(keyword.keyword);
-            }}
-            title="Delete keyword"
-          >
-            🗑️
-          </button>
+        <td className="py-4 px-4">
+          <div className="flex items-center gap-3">
+            <button 
+              className={`text-lg hover:scale-110 transition-transform ${
+                isStarred 
+                  ? 'text-yellow-400' 
+                  : 'opacity-50 hover:opacity-100'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStar?.(keyword.keyword);
+              }}
+              title={isStarred ? 'Remove star' : 'Add star'}
+              style={{ color: isStarred ? '#facc15' : 'var(--text-secondary)' }}
+            >
+              {isStarred ? '★' : '☆'}
+            </button>
+            
+            <Link 
+              href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
+              className="transition-opacity hover:opacity-70"
+              style={{ color: 'var(--lilac)' }}
+              title="View detailed history"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </Link>
+            
+            <button 
+              className="transition-opacity hover:opacity-70"
+              style={{ color: 'var(--error)' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteKeyword?.(keyword.keyword);
+              }}
+              title="Delete keyword"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </td>
       </tr>
     );
   };
 
-  const renderKeywordSection = (keywords: DeduplicatedKeyword[], title: string) => (
-    keywords.length > 0 && (
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3 emoji" style={{ color: 'var(--lilac-dark)' }}>{title}</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full neu-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Keyword</th>
-                <th>Trend</th>
-                <th>Last Updated</th>
-                <th>⭐</th>
-                <th>🗑️</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keywords.map(renderKeywordRow)}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )
-  );
-  
   return (
     <div className="neu-card">
-      <h2 className="text-2xl font-bold mb-6">
-        <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          <span className="emoji">📊</span> Keyword Rankings ({deduplicatedKeywords.length} unique keywords)
-        </span>
-      </h2>
+      <h2 className="text-xl font-semibold mb-4">Keywords</h2>
       
-      {renderKeywordSection(sortedStarredKeywords, `⭐ Starred Keywords (${sortedStarredKeywords.length})`)}
-      {renderKeywordSection(sortedRegularKeywords, `All Keywords (${sortedRegularKeywords.length})`)}
-      
-      {deduplicatedKeywords.length === 0 && (
-        <div className="text-center py-8 text-spotify-gray">
-          No keywords tracked for this playlist yet.
-        </div>
+      {starredKeywordsList.length > 0 && (
+        <>
+          <h3 className="font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
+            ⭐ Starred ({starredKeywordsList.length})
+          </h3>
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--shadow-dark)' }}>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Position</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Keyword</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Last Updated</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedStarredKeywords.map(renderKeywordRow)}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
+      
+      <h3 className="font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
+        Keywords ({regularKeywords.length})
+      </h3>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--shadow-dark)' }}>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Position</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Keyword</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Last Updated</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedRegularKeywords.map(renderKeywordRow)}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

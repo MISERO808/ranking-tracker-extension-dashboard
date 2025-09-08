@@ -21,7 +21,7 @@ export default function KeywordDetail() {
   const [playlist, setPlaylist] = useState<PlaylistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTerritory, setSelectedTerritory] = useState<string>('all');
+  const [selectedTerritory, setSelectedTerritory] = useState<string>('');
 
   useEffect(() => {
     fetchPlaylist();
@@ -82,7 +82,7 @@ export default function KeywordDetail() {
   );
 
   // Filter by selected territory
-  const filteredData = selectedTerritory === 'all' 
+  const filteredData = !selectedTerritory || selectedTerritory === '' 
     ? allKeywordData 
     : allKeywordData.filter((k: KeywordRanking) => k.territory === selectedTerritory);
 
@@ -191,7 +191,6 @@ export default function KeywordDetail() {
             onChange={(e) => setSelectedTerritory(e.target.value)}
             className="neu-select w-full md:w-48"
           >
-            <option value="all">All Territories</option>
             {territories.map(territory => (
               <option key={territory} value={territory}>
                 {territory.toUpperCase()}

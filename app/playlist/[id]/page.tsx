@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PlaylistData } from '@/lib/redis';
 import KeywordTable from '@/components/KeywordTable';
-import KeywordChart from '@/components/KeywordChart';
 
 export default function PlaylistDetail() {
   const params = useParams();
@@ -16,8 +15,11 @@ export default function PlaylistDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
-  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('');
   const [starredKeywords, setStarredKeywords] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [positionFilter, setPositionFilter] = useState<{ min: string; max: string }>({ min: '', max: '' });
+  const [sortBy, setSortBy] = useState<'position-asc' | 'position-desc' | 'updated-asc' | 'updated-desc'>('position-asc');
   
   // Update selected territory when country filter changes
   useEffect(() => {
@@ -107,6 +109,18 @@ export default function PlaylistDetail() {
       const currentString = JSON.stringify(playlist);
       if (dataString !== currentString) {
         setPlaylist(data);
+        
+        // Set default country filter to first available territory if not set
+        if (!selectedCountryFilter && data.keywords.length > 0) {
+          const territories = Array.from(new Set(
+            data.keywords
+              .map((k: any) => k.territory?.toLowerCase().trim())
+              .filter((t: any) => t && t !== 'unknown' && t.length === 2)
+          )).sort();
+          if (territories.length > 0) {
+            setSelectedCountryFilter(territories[0] as string);
+          }
+        }
       }
       
       setError(null);
@@ -203,7 +217,6 @@ export default function PlaylistDetail() {
                   onChange={(e) => setSelectedCountryFilter(e.target.value)}
                   className="neu-select w-48"
                 >
-                  <option value="all">All Countries</option>
                   {(() => {
                     const territories = Array.from(new Set(
                       playlist.keywords
@@ -242,9 +255,9 @@ export default function PlaylistDetail() {
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div>
           {/* Keyword Table */}
-          <div className="lg:col-span-2">
+          <div>
             <KeywordTable 
               keywords={playlist.keywords}
               onKeywordSelect={(keyword, territory) => {
@@ -252,33 +265,12 @@ export default function PlaylistDetail() {
                 setSelectedTerritory(territory);
               }}
               selectedKeyword={selectedKeyword}
-              selectedCountryFilter={selectedCountryFilter === 'all' ? undefined : selectedCountryFilter}
+              selectedCountryFilter={selectedCountryFilter}
               starredKeywords={starredKeywords}
               onToggleStar={toggleStar}
               onDeleteKeyword={deleteKeyword}
               playlistId={playlist.id}
             />
-          </div>
-
-          {/* Chart */}
-          <div className="lg:col-span-1">
-            {selectedKeyword && selectedTerritory ? (
-              <KeywordChart 
-                playlistId={playlist.id}
-                keyword={selectedKeyword}
-                territory={selectedTerritory}
-                allKeywords={playlist.keywords}
-              />
-            ) : (
-              <div className="neu-card h-96 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="neu-inset inline-block p-4 rounded-full mb-4">
-                    <span className="text-6xl emoji">📈</span>
-                  </div>
-                  <div className="text-lg" style={{ color: 'var(--text-secondary)' }}>Select a keyword to view ranking history</div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
