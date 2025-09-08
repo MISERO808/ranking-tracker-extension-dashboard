@@ -121,7 +121,7 @@ export default function KeywordDetail() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="neu-flat p-3">
+        <div className="neu-flat p-3" style={{ background: 'rgba(232, 234, 237, 0.95)' }}>
           <p style={{ color: 'var(--text-primary)' }}>{`Position: #${data.position}`}</p>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {new Date(data.timestamp).toLocaleDateString('en-US', {

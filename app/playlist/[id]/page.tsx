@@ -109,21 +109,21 @@ export default function PlaylistDetail() {
       const currentString = JSON.stringify(playlist);
       if (dataString !== currentString) {
         setPlaylist(data);
+      }
+      
+      // Only set initial country filter, never update it after user selection
+      if (!selectedCountryFilter && data.keywords.length > 0) {
+        const territories = Array.from(new Set(
+          data.keywords
+            .map((k: any) => k.territory?.toLowerCase().trim())
+            .filter((t: any) => t && t !== 'unknown' && t.length === 2)
+        )).sort();
         
-        // Set default country filter to 'de' if available, otherwise first territory
-        if (!selectedCountryFilter && data.keywords.length > 0) {
-          const territories = Array.from(new Set(
-            data.keywords
-              .map((k: any) => k.territory?.toLowerCase().trim())
-              .filter((t: any) => t && t !== 'unknown' && t.length === 2)
-          )).sort();
-          
-          // Prefer 'de' as default, otherwise use first available
-          if (territories.includes('de')) {
-            setSelectedCountryFilter('de');
-          } else if (territories.length > 0) {
-            setSelectedCountryFilter(territories[0] as string);
-          }
+        // Prefer 'de' as default, otherwise use first available
+        if (territories.includes('de')) {
+          setSelectedCountryFilter('de');
+        } else if (territories.length > 0) {
+          setSelectedCountryFilter(territories[0] as string);
         }
       }
       
@@ -200,7 +200,7 @@ export default function PlaylistDetail() {
             </div>
             
             <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4 emoji">
+              <h1 className="text-5xl font-bold mb-4">
                 <span style={{ background: 'linear-gradient(135deg, var(--lilac), var(--lilac-dark))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {playlist.name}
                 </span>

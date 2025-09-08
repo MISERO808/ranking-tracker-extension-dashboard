@@ -328,6 +328,7 @@ async function processSearchResults(data) {
         foundRankings.push({
           playlistId,
           playlistName: item.name,
+          playlistImage: item.image || '',
           keyword: data.keyword,
           position: item.position,
           totalResults: data.totalResults,
@@ -345,9 +346,10 @@ async function processSearchResults(data) {
         currentSearchSession.add(sessionKey);
       }
       
-      // Update the watched playlist name if needed
-      if (watchedPlaylists[playlistId].name === `Playlist ${playlistId.substring(0, 8)}...`) {
+      // Update the watched playlist name and image if needed
+      if (watchedPlaylists[playlistId].name === `Playlist ${playlistId.substring(0, 8)}...` || !watchedPlaylists[playlistId].image) {
         watchedPlaylists[playlistId].name = item.name;
+        watchedPlaylists[playlistId].image = item.image || '';
         chrome.storage.local.set({ watchedPlaylists });
       }
     }

@@ -172,10 +172,16 @@ async function buildPlaylistData(rankings) {
     return null;
   }
 
+  // Get the image from the most recent ranking or watched playlist
+  const playlistImage = mainPlaylist.rankings[0]?.playlistImage || 
+                        watchedPlaylist?.image || 
+                        mainPlaylist.playlist.playlistImage || 
+                        '';
+  
   return {
     id: mainPlaylistId,
     name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
-    image: mainPlaylist.playlist.playlistImage || '',
+    image: playlistImage,
     keywords: mainPlaylist.rankings.map(ranking => ({
       keyword: ranking.keyword,
       position: ranking.position,

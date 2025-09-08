@@ -10,10 +10,11 @@
 
 :root {
     --bg-color: #f0f2f5;
+    --card-bg: #d8dadd;
     --text-primary: #2c3e50;
     --text-secondary: #606f7b;
     --shadow-light: #ffffff;
-    --shadow-dark: #a0a8b0;
+    --shadow-dark: #8a9099;
     --accent: #a78bfa;
     --accent-light: #c4b5fd;
     --accent-dark: #8b5cf6;

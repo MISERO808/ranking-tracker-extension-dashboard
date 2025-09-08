@@ -156,12 +156,26 @@
           const playlistName = playlist.data?.name || playlist.name;
           const position = actualOffset + index + 1;
           
+          // Extract image URL from the playlist data
+          let playlistImage = '';
+          if (playlist.data?.images?.items && playlist.data.images.items.length > 0) {
+            // Get the first image (usually the highest quality)
+            playlistImage = playlist.data.images.items[0]?.sources?.[0]?.url || '';
+          } else if (playlist.images?.items && playlist.images.items.length > 0) {
+            playlistImage = playlist.images.items[0]?.sources?.[0]?.url || '';
+          } else if (playlist.data?.coverArt?.sources && playlist.data.coverArt.sources.length > 0) {
+            playlistImage = playlist.data.coverArt.sources[0]?.url || '';
+          } else if (playlist.coverArt?.sources && playlist.coverArt.sources.length > 0) {
+            playlistImage = playlist.coverArt.sources[0]?.url || '';
+          }
+          
           // Check if we already have this playlist
           const existingIndex = existingResults.findIndex(r => r.id === playlistId);
           
           if (existingIndex >= 0) {
-            // Update position
+            // Update position and image
             existingResults[existingIndex].position = position;
+            existingResults[existingIndex].image = playlistImage;
             console.log(`[Spotify Tracker Inject] Updated ${playlistName} to position #${position}`);
           } else {
             // Add new playlist
@@ -169,7 +183,8 @@
               position: position,
               uri: playlist.data?.uri || playlist.uri,
               name: playlistName,
-              id: playlistId
+              id: playlistId,
+              image: playlistImage
             });
             console.log(`[Spotify Tracker Inject] Added ${playlistName} at position #${position}`);
           }

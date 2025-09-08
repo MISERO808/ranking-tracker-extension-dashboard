@@ -237,10 +237,10 @@ export default function KeywordTable({
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--shadow-dark)' }}>
-                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Position</th>
-                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Keyword</th>
-                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Last Updated</th>
-                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '120px' }}>Position</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '40%' }}>Keyword</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '180px' }}>Last Updated</th>
+                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '140px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,10 +258,10 @@ export default function KeywordTable({
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--shadow-dark)' }}>
-              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Position</th>
-              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Keyword</th>
-              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Last Updated</th>
-              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '120px' }}>Position</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '40%' }}>Keyword</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '180px' }}>Last Updated</th>
+              <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)', width: '140px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
