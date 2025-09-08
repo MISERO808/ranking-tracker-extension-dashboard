@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllPlaylists, savePlaylistData, saveKeywordHistory, PlaylistData } from '@/lib/redis';
+import { getPlaylistImage } from '@/lib/spotify';
 
 // Add CORS headers
 const corsHeaders = {
@@ -76,6 +77,22 @@ export async function POST(request: Request) {
     console.log(`📝 POST /api/playlists - Playlist: ${playlistData.name}`);
     console.log(`📊 Received ${rawData.keywords.length} keywords, kept ${cleanedKeywords.length} valid ones`);
     console.log(`📅 Request timestamp: ${requestTime}`);
+    
+    // Fetch image from Spotify API if not present
+    if (!playlistData.image) {
+      try {
+        console.log(`🖼️ Fetching image for playlist ${playlistData.id} from Spotify API...`);
+        const imageUrl = await getPlaylistImage(playlistData.id);
+        if (imageUrl) {
+          playlistData.image = imageUrl;
+          console.log(`✅ Got image from Spotify API: ${imageUrl.substring(0, 50)}...`);
+        } else {
+          console.log(`⚠️ No image found on Spotify for playlist ${playlistData.id}`);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to fetch image from Spotify:`, error);
+      }
+    }
     
     // DEBUG: Log keyword timestamps to verify historical data
     const keywordsByDate = playlistData.keywords.reduce((acc, k) => {
