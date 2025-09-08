@@ -49,7 +49,12 @@ export async function GET() {
           console.log(`\n🎯 POTENTIAL DUPLICATES found for: ${entries[0].keyword} #${entries[0].position}`);
           console.log(`   Found ${entries.length} similar entries:`);
           
-          const differences = [];
+          const differences: Array<{
+            entry1: { timestamp: string; id?: string; sessionId?: string; userId?: string };
+            entry2: { timestamp: string; id?: string; sessionId?: string; userId?: string };
+            timeDifferenceMs: number;
+            timeDifferenceSeconds: number;
+          }> = [];
           
           entries.forEach((entry, index) => {
             console.log(`   [${index + 1}] Timestamp: ${entry.timestamp}`);
