@@ -156,10 +156,20 @@
           const playlistName = playlist.data?.name || playlist.name;
           const position = actualOffset + index + 1;
           
-          // Extract image URL from the playlist data
+          // Extract image URL from the playlist data - try all possible structures
           let playlistImage = '';
+          
+          // Log the playlist structure to understand it better
+          console.log('[Spotify Tracker Inject] Playlist structure:', {
+            hasData: !!playlist.data,
+            hasImages: !!playlist.images,
+            hasCoverArt: !!playlist.coverArt,
+            hasDataImages: !!playlist.data?.images,
+            hasDataCoverArt: !!playlist.data?.coverArt
+          });
+          
+          // Try different image property paths that Spotify uses
           if (playlist.data?.images?.items && playlist.data.images.items.length > 0) {
-            // Get the first image (usually the highest quality)
             playlistImage = playlist.data.images.items[0]?.sources?.[0]?.url || '';
           } else if (playlist.images?.items && playlist.images.items.length > 0) {
             playlistImage = playlist.images.items[0]?.sources?.[0]?.url || '';
@@ -167,6 +177,16 @@
             playlistImage = playlist.data.coverArt.sources[0]?.url || '';
           } else if (playlist.coverArt?.sources && playlist.coverArt.sources.length > 0) {
             playlistImage = playlist.coverArt.sources[0]?.url || '';
+          } else if (playlist.data?.image) {
+            playlistImage = playlist.data.image;
+          } else if (playlist.image) {
+            playlistImage = playlist.image;
+          }
+          
+          if (playlistImage) {
+            console.log(`[Spotify Tracker Inject] Found image for ${playlistName}: ${playlistImage.substring(0, 50)}...`);
+          } else {
+            console.log(`[Spotify Tracker Inject] No image found for ${playlistName}`);
           }
           
           // Check if we already have this playlist

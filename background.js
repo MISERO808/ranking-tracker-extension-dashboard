@@ -178,6 +178,13 @@ async function buildPlaylistData(rankings) {
                         mainPlaylist.playlist.playlistImage || 
                         '';
   
+  console.log('[Background] Image sources:', {
+    fromRanking: mainPlaylist.rankings[0]?.playlistImage || 'none',
+    fromWatched: watchedPlaylist?.image || 'none',
+    fromPlaylist: mainPlaylist.playlist.playlistImage || 'none',
+    final: playlistImage || 'none'
+  });
+  
   return {
     id: mainPlaylistId,
     name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',

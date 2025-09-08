@@ -273,6 +273,15 @@ async function processSearchResults(data) {
   data.results.forEach((item) => {
     const playlistId = extractPlaylistId(item.uri);
     
+    // Debug log the item structure
+    if (watchedIds.includes(playlistId)) {
+      console.log('[Content] Item data:', {
+        name: item.name,
+        hasImage: !!item.image,
+        image: item.image || 'none'
+      });
+    }
+    
     // Check if this is a watched playlist
     if (watchedIds.includes(playlistId)) {
       // Skip if no valid territory

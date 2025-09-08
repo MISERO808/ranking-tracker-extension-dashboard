@@ -15,18 +15,22 @@ export default function PlaylistDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
-  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('');
+  // Use localStorage to persist country filter
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`country-filter-${playlistId}`) || '';
+    }
+    return '';
+  });
   const [countryFilterInitialized, setCountryFilterInitialized] = useState(false);
   const [starredKeywords, setStarredKeywords] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [positionFilter, setPositionFilter] = useState<{ min: string; max: string }>({ min: '', max: '' });
   const [sortBy, setSortBy] = useState<'position-asc' | 'position-desc' | 'updated-asc' | 'updated-desc'>('position-asc');
   
-  // Update selected territory when country filter changes
+  // Set selected territory same as country filter
   useEffect(() => {
-    if (selectedCountryFilter !== 'all') {
-      setSelectedTerritory(selectedCountryFilter);
-    }
+    setSelectedTerritory(selectedCountryFilter);
   }, [selectedCountryFilter]);
   
   // Load starred keywords from localStorage
@@ -112,19 +116,26 @@ export default function PlaylistDetail() {
         setPlaylist(data);
       }
       
-      // Only set initial country filter ONCE
-      if (!countryFilterInitialized && data.keywords.length > 0) {
+      // Only set initial country filter if not already set
+      if (!countryFilterInitialized && !selectedCountryFilter && data.keywords.length > 0) {
         const territories = Array.from(new Set(
           data.keywords
             .map((k: any) => k.territory?.toLowerCase().trim())
             .filter((t: any) => t && t !== 'unknown' && t.length === 2)
         )).sort();
         
-        // Prefer 'de' as default, otherwise use first available
-        if (territories.includes('de')) {
-          setSelectedCountryFilter('de');
+        // Check if we have a stored preference
+        const storedFilter = localStorage.getItem(`country-filter-${playlistId}`);
+        if (storedFilter && territories.includes(storedFilter)) {
+          setSelectedCountryFilter(storedFilter);
+        } else if (territories.includes('de')) {
+          const defaultValue = 'de';
+          setSelectedCountryFilter(defaultValue);
+          localStorage.setItem(`country-filter-${playlistId}`, defaultValue);
         } else if (territories.length > 0) {
-          setSelectedCountryFilter(territories[0] as string);
+          const defaultValue = territories[0] as string;
+          setSelectedCountryFilter(defaultValue);
+          localStorage.setItem(`country-filter-${playlistId}`, defaultValue);
         }
         setCountryFilterInitialized(true);
       }
@@ -220,7 +231,11 @@ export default function PlaylistDetail() {
                 <select 
                   id="country-filter"
                   value={selectedCountryFilter}
-                  onChange={(e) => setSelectedCountryFilter(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedCountryFilter(value);
+                    localStorage.setItem(`country-filter-${playlistId}`, value);
+                  }}
                   className="neu-select w-48"
                 >
                   {(() => {
