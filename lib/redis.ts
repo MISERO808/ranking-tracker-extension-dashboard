@@ -72,9 +72,21 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
   if (existingData) {
     console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
     
-    // Merge new keywords with existing ones, keeping all historical data
+    // CRITICAL: Filter out invalid territories from existing data BEFORE merging
+    const validExistingKeywords = existingData.keywords.filter(k => {
+      const territory = k.territory?.toLowerCase().trim();
+      const isValid = territory && territory !== 'unknown' && territory.length === 2 && /^[a-z]{2}$/.test(territory);
+      if (!isValid) {
+        console.log(`[Redis] Filtering out invalid existing territory: "${k.territory}" for "${k.keyword}"`);
+      }
+      return isValid;
+    });
+    
+    console.log(`[Redis] Filtered existing data: ${existingData.keywords.length} → ${validExistingKeywords.length} keywords`);
+    
+    // Merge new keywords with CLEANED existing ones
     // CRITICAL: Normalize territory to lowercase in the key to prevent duplicates like "DE" vs "de"
-    const existingKeywordsMap = new Map(existingData.keywords.map(k => 
+    const existingKeywordsMap = new Map(validExistingKeywords.map(k => 
       [`${k.keyword.toLowerCase()}-${k.territory.toLowerCase()}-${k.timestamp}`, k]
     ));
     
@@ -82,9 +94,19 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     
     // Add new keywords while preserving existing ones
     data.keywords.forEach(newKeyword => {
+      // Validate new keyword territory too
+      const territory = newKeyword.territory?.toLowerCase().trim();
+      if (!territory || territory === 'unknown' || territory.length !== 2 || !/^[a-z]{2}$/.test(territory)) {
+        console.log(`[Redis] Rejecting new keyword with invalid territory: "${newKeyword.territory}"`);
+        return; // Skip this keyword
+      }
+      
       // CRITICAL: Normalize territory to lowercase in the key to prevent duplicates
-      const key = `${newKeyword.keyword.toLowerCase()}-${newKeyword.territory.toLowerCase()}-${newKeyword.timestamp}`;
-      existingKeywordsMap.set(key, newKeyword);
+      const key = `${newKeyword.keyword.toLowerCase()}-${territory}-${newKeyword.timestamp}`;
+      existingKeywordsMap.set(key, {
+        ...newKeyword,
+        territory: territory // Ensure lowercase
+      });
     });
     
     console.log(`[Redis] After merge, map has ${existingKeywordsMap.size} entries`);
