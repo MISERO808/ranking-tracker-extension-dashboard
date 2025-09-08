@@ -23,8 +23,8 @@ export async function POST(request: Request) {
     // Update the image
     existingData.image = imageUrl;
     
-    // Save back to Redis
-    await savePlaylistData(existingData);
+    // Save back to Redis (requires playlistId as first argument)
+    await savePlaylistData(playlistId, existingData);
     
     return NextResponse.json({ 
       success: true,
