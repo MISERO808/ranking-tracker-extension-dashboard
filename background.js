@@ -129,21 +129,34 @@ async function syncToBackend(rankings, backendUrl) {
 }
 
 async function buildPlaylistData(rankings) {
-  // Get all ranking history to build complete playlist data
-  const { rankingHistory = [], watchedPlaylists = {} } = await chrome.storage.local.get(['rankingHistory', 'watchedPlaylists']);
+  // Get watched playlists info
+  const { watchedPlaylists = {} } = await chrome.storage.local.get(['watchedPlaylists']);
   
   // Group rankings by playlist
   const playlistGroups = {};
   
-  // Add both new rankings and existing history
-  [...rankingHistory, ...rankings].forEach(ranking => {
+  // ONLY send NEW rankings, not historical data
+  // Historical data may contain old/invalid territories
+  rankings.forEach(ranking => {
+    // Clean and validate territory BEFORE grouping
+    const territory = ranking.territory?.toLowerCase().trim();
+    if (!territory || territory === 'unknown' || territory.length !== 2) {
+      console.log(`[Background] Skipping invalid territory: "${ranking.territory}"`);
+      return; // Skip this ranking
+    }
+    
     if (!playlistGroups[ranking.playlistId]) {
       playlistGroups[ranking.playlistId] = {
         rankings: [],
         playlist: ranking
       };
     }
-    playlistGroups[ranking.playlistId].rankings.push(ranking);
+    
+    // Add with cleaned territory
+    playlistGroups[ranking.playlistId].rankings.push({
+      ...ranking,
+      territory: territory // Ensure lowercase
+    });
   });
   
   // Convert to dashboard format - send the main playlist (first one)
@@ -153,16 +166,9 @@ async function buildPlaylistData(rankings) {
   const mainPlaylist = playlistGroups[mainPlaylistId];
   const watchedPlaylist = watchedPlaylists[mainPlaylistId];
   
-  // Filter out entries with invalid territories
-  const validRankings = mainPlaylist.rankings.filter(ranking => {
-    const territory = ranking.territory?.toLowerCase().trim();
-    // Only keep entries with valid 2-letter country codes
-    return territory && territory !== 'unknown' && territory.length === 2 && /^[a-z]{2}$/i.test(territory);
-  });
-
-  // Don't send if no valid rankings
-  if (validRankings.length === 0) {
-    console.log('[Background] No valid rankings to sync (all have invalid territories)');
+  // Rankings are already filtered and validated
+  if (mainPlaylist.rankings.length === 0) {
+    console.log('[Background] No valid rankings to sync');
     return null;
   }
 
@@ -170,10 +176,10 @@ async function buildPlaylistData(rankings) {
     id: mainPlaylistId,
     name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
     image: mainPlaylist.playlist.playlistImage || '',
-    keywords: validRankings.map(ranking => ({
+    keywords: mainPlaylist.rankings.map(ranking => ({
       keyword: ranking.keyword,
       position: ranking.position,
-      territory: ranking.territory.toLowerCase().trim(), // Normalize to lowercase
+      territory: ranking.territory, // Already normalized
       timestamp: ranking.timestamp,
       userId: ranking.userId,
       sessionId: ranking.sessionId

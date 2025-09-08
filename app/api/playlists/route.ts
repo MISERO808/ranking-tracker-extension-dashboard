@@ -49,8 +49,32 @@ export async function POST(request: Request) {
     // Log request headers for debugging
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
     
-    const playlistData: PlaylistData = await request.json();
-    console.log(`📝 POST /api/playlists - Playlist: ${playlistData.name} (${playlistData.keywords.length} keywords)`);
+    const rawData: PlaylistData = await request.json();
+    
+    // CRITICAL: Clean and validate all territories before processing
+    const cleanedKeywords = rawData.keywords
+      .filter(k => {
+        const territory = k.territory?.toLowerCase().trim();
+        // Only accept valid 2-letter country codes
+        if (!territory || territory === 'unknown' || territory.length !== 2 || !/^[a-z]{2}$/.test(territory)) {
+          console.log(`⚠️ Rejecting invalid territory: "${k.territory}" for keyword "${k.keyword}"`);
+          return false;
+        }
+        return true;
+      })
+      .map(k => ({
+        ...k,
+        territory: k.territory.toLowerCase().trim() // Ensure lowercase
+      }));
+    
+    // Create cleaned playlist data
+    const playlistData: PlaylistData = {
+      ...rawData,
+      keywords: cleanedKeywords
+    };
+    
+    console.log(`📝 POST /api/playlists - Playlist: ${playlistData.name}`);
+    console.log(`📊 Received ${rawData.keywords.length} keywords, kept ${cleanedKeywords.length} valid ones`);
     console.log(`📅 Request timestamp: ${requestTime}`);
     
     // DEBUG: Log keyword timestamps to verify historical data
