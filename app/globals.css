@@ -28,7 +28,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: var(--bg-color);
+    background: var(--card-bg);
     min-height: 100vh;
     color: var(--text-primary);
 }
@@ -50,7 +50,7 @@ body {
 
 /* Neumorphism Cards */
 .neu-card {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border-radius: 24px;
     padding: 2rem;
     box-shadow: 
@@ -66,7 +66,7 @@ body {
 }
 
 .neu-flat {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 
@@ -75,7 +75,7 @@ body {
 }
 
 .neu-inset {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 
@@ -84,7 +84,7 @@ body {
 }
 
 .neu-pressed {
-    background: var(--bg-color);
+    background: var(--card-bg);
     box-shadow: 
         inset 3px 3px 8px rgba(149, 157, 165, 0.2),
         inset -3px -3px 8px rgba(255, 255, 255, 0.7);
@@ -103,7 +103,7 @@ body {
     gap: 0.5rem;
     font-size: 0.95rem;
     text-decoration: none;
-    background: var(--bg-color);
+    background: var(--card-bg);
     color: var(--text-primary);
     box-shadow: 
         5px 5px 10px rgba(149, 157, 165, 0.2),
@@ -142,7 +142,7 @@ body {
     text-align: center;
     padding: 1.5rem;
     border-radius: 20px;
-    background: var(--bg-color);
+    background: var(--card-bg);
     box-shadow: 
         5px 5px 15px rgba(149, 157, 165, 0.15),
         -5px -5px 15px rgba(255, 255, 255, 0.7);
@@ -168,7 +168,7 @@ body {
 
 /* Neumorphism Input/Select */
 .neu-input, .neu-select {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border: none;
     border-radius: 12px;
     padding: 0.75rem 1.25rem;
@@ -189,7 +189,7 @@ body {
 
 /* Neumorphism Tables */
 .neu-table {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 
@@ -232,7 +232,7 @@ body {
     border-radius: 50px;
     font-size: 0.875rem;
     font-weight: 600;
-    background: var(--bg-color);
+    background: var(--card-bg);
     color: var(--text-primary);
     box-shadow: 
         3px 3px 8px rgba(149, 157, 165, 0.15),
@@ -250,7 +250,7 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--bg-color);
+    background: var(--card-bg);
     box-shadow: 
         8px 8px 20px var(--shadow-dark),
         -8px -8px 20px var(--shadow-light),
@@ -271,14 +271,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-color);
+    background: var(--card-bg);
     box-shadow: 
         inset 2px 2px 4px var(--shadow-dark),
         inset -2px -2px 4px var(--shadow-light);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border-radius: 6px;
     box-shadow: 
         2px 2px 4px var(--shadow-dark),

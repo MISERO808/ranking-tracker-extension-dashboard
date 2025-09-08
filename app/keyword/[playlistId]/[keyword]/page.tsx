@@ -173,9 +173,10 @@ export default function KeywordDetail() {
               href={spotifySearchUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="neu-btn-primary"
+              className="neu-btn"
+              style={{ color: 'var(--lilac)', textDecoration: 'none' }}
             >
-              <span className="emoji">🎵</span> Search on Spotify
+              Search on Spotify
             </a>
           </div>
         </div>
@@ -224,24 +225,22 @@ export default function KeywordDetail() {
 
         {/* Trend Indicator */}
         {chartData.length > 1 && (
-          <div className="mb-8 text-center">
-            <div className="neu-badge-accent inline-flex items-center">
-              {trend < 0 && (
-                <div>
-                  ↗️ Improving by {Math.abs(trend)} positions (last 5 data points)
-                </div>
-              )}
-              {trend > 0 && (
-                <div>
-                  ↘️ Declining by {trend} positions (last 5 data points)
-                </div>
-              )}
-              {trend === 0 && (
-                <div>
-                  → Stable (last 5 data points)
-                </div>
-              )}
-            </div>
+          <div className="mb-8 text-center" style={{ color: 'var(--text-primary)' }}>
+            {trend < 0 && (
+              <span>
+                ↑ Improving by {Math.abs(trend)} positions (last 5 data points)
+              </span>
+            )}
+            {trend > 0 && (
+              <span>
+                ↓ Declining by {trend} positions (last 5 data points)
+              </span>
+            )}
+            {trend === 0 && (
+              <span>
+                → Stable (last 5 data points)
+              </span>
+            )}
           </div>
         )}
 

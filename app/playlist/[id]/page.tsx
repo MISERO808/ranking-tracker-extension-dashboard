@@ -110,14 +110,18 @@ export default function PlaylistDetail() {
       if (dataString !== currentString) {
         setPlaylist(data);
         
-        // Set default country filter to first available territory if not set
+        // Set default country filter to 'de' if available, otherwise first territory
         if (!selectedCountryFilter && data.keywords.length > 0) {
           const territories = Array.from(new Set(
             data.keywords
               .map((k: any) => k.territory?.toLowerCase().trim())
               .filter((t: any) => t && t !== 'unknown' && t.length === 2)
           )).sort();
-          if (territories.length > 0) {
+          
+          // Prefer 'de' as default, otherwise use first available
+          if (territories.includes('de')) {
+            setSelectedCountryFilter('de');
+          } else if (territories.length > 0) {
             setSelectedCountryFilter(territories[0] as string);
           }
         }
@@ -198,11 +202,7 @@ export default function PlaylistDetail() {
               <div className="flex gap-8 mb-6" style={{ color: 'var(--text-secondary)' }}>
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--lilac)' }}></span>
-                  {playlist.keywords.length} keywords tracked
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--lilac-light)' }}></span>
-                  Last updated: {new Date(playlist.lastUpdated).toLocaleDateString()}
+                  {new Set(playlist.keywords.map(k => k.keyword.toLowerCase().trim())).size} keywords tracked
                 </span>
               </div>
               
@@ -232,24 +232,6 @@ export default function PlaylistDetail() {
                 </select>
               </div>
               
-              {/* Territories Display */}
-              <div className="flex flex-wrap gap-2">
-                {(() => {
-                  const territories = Array.from(new Set(
-                    playlist.keywords
-                      .map(k => k.territory?.toLowerCase().trim())
-                      .filter(t => t && t !== 'unknown' && t.length === 2) // Only valid 2-letter codes
-                  )).sort();
-                  return territories.map(territory => (
-                    <span 
-                      key={territory}
-                      className="neu-badge"
-                    >
-                      {territory.toUpperCase()}
-                    </span>
-                  ));
-                })()}
-              </div>
             </div>
           </div>
         </div>

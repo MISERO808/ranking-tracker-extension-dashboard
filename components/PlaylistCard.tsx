@@ -32,20 +32,20 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
   return (
     <Link href={`/playlist/${playlist.id}`} className="block">
       <div className="neu-card group cursor-pointer h-full flex flex-col">
-        {/* Playlist Image */}
+        {/* Playlist Image - 1:1 aspect ratio */}
         {playlist.image && (
-          <div className="neu-inset rounded-xl mb-6 overflow-hidden">
+          <div className="neu-inset rounded-xl mb-6 overflow-hidden aspect-square">
             <img 
               src={playlist.image} 
               alt={playlist.name}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           </div>
         )}
         
         {/* If no image, show placeholder */}
         {!playlist.image && (
-          <div className="neu-inset rounded-xl mb-6 overflow-hidden h-48 flex items-center justify-center" style={{ background: 'var(--bg-color)' }}>
+          <div className="neu-inset rounded-xl mb-6 overflow-hidden aspect-square flex items-center justify-center">
             <svg className="w-20 h-20" style={{ color: 'var(--text-secondary)', opacity: 0.3 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
@@ -53,8 +53,8 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
         )}
         
         {/* Playlist Name */}
-        <h2 className="text-xl font-semibold mb-6 transition-colors" style={{ color: 'var(--text-primary)' }}>
-          <span className="group-hover:opacity-70 transition-opacity">
+        <h2 className="text-xl font-semibold mb-6 transition-colors">
+          <span className="group-hover:opacity-70 transition-opacity" style={{ color: 'var(--text-primary)' }}>
             {playlist.name}
           </span>
         </h2>
@@ -88,23 +88,6 @@ export default function PlaylistCard({ playlist }: PlaylistCardProps) {
           </div>
         </div>
         
-        {/* Territories indicator */}
-        {playlist.keywords.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-auto">
-            {Array.from(new Set(
-              playlist.keywords
-                .map(k => k.territory?.toLowerCase().trim())
-                .filter(t => t && t !== 'unknown' && t.length === 2)
-            )).sort().map(territory => (
-              <span 
-                key={territory}
-                className="neu-badge"
-              >
-                {territory?.toUpperCase()}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </Link>
   );
