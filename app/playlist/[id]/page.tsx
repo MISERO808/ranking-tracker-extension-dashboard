@@ -68,15 +68,14 @@ export default function PlaylistDetail() {
       setStarredKeywords(newStarred);
       localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
       
-      // Update the server
-      const response = await fetch(`/api/playlists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedPlaylist)
+      // Call DELETE endpoint to mark keyword as deleted
+      const response = await fetch(`/api/playlists/${playlistId}/keywords/${encodeURIComponent(keywordToDelete)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update playlist');
+        throw new Error('Failed to delete keyword');
       }
     } catch (error) {
       console.error('Error deleting keyword:', error);

@@ -71,6 +71,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function handleNewRankings(rankings) {
   console.log('[Background] Processing', rankings.length, 'new rankings');
   
+  // Track what we've already synced to avoid re-sending deleted items
+  const { syncedRankings = {} } = await chrome.storage.local.get('syncedRankings');
+  
+  // Filter out rankings we've already synced
+  const newRankingsToSync = [];
+  const syncKeysToAdd = [];
+  
+  for (const ranking of rankings) {
+    const syncKey = `${ranking.playlistId}-${ranking.keyword}-${ranking.territory}-${ranking.timestamp}`;
+    if (!syncedRankings[syncKey]) {
+      newRankingsToSync.push(ranking);
+      syncKeysToAdd.push(syncKey);
+    }
+  }
+  
+  if (newRankingsToSync.length === 0) {
+    console.log('[Background] No new rankings to sync (all already synced)');
+    return;
+  }
+  
+  console.log(`[Background] ${newRankingsToSync.length} new rankings to sync (filtered from ${rankings.length})`)
+  
   // Get settings - FORCE enable auto-sync for real-time sync
   let { autoSync = false, backendUrl } = await chrome.storage.sync.get(['autoSync', 'backendUrl']);
   
@@ -88,7 +110,26 @@ async function handleNewRankings(rankings) {
   
   if (autoSync && backendUrl) {
     console.log('[Background] 🚀 Auto-syncing to dashboard:', backendUrl);
-    await syncToBackend(rankings, backendUrl);
+    const success = await syncToBackend(newRankingsToSync, backendUrl);
+    
+    // Only mark as synced if the sync was successful
+    if (success) {
+      const updatedSyncedRankings = { ...syncedRankings };
+      for (const key of syncKeysToAdd) {
+        updatedSyncedRankings[key] = Date.now();
+      }
+      
+      // Clean up old synced rankings (older than 7 days)
+      const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      for (const [key, timestamp] of Object.entries(updatedSyncedRankings)) {
+        if (timestamp < oneWeekAgo) {
+          delete updatedSyncedRankings[key];
+        }
+      }
+      
+      await chrome.storage.local.set({ syncedRankings: updatedSyncedRankings });
+      console.log('[Background] ✅ Marked', syncKeysToAdd.length, 'rankings as synced');
+    }
   } else {
     console.log('[Background] ⚠️ Auto-sync disabled or no backend URL');
   }
@@ -118,13 +159,16 @@ async function syncToBackend(rankings, backendUrl) {
     
     if (response.ok) {
       console.log('[Background] ✅ Sync successful to dashboard!');
+      return true;
     } else {
       console.error('[Background] ❌ Sync failed:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('[Background] Error details:', errorText);
+      return false;
     }
   } catch (error) {
     console.error('[Background] ❌ Sync error:', error);
+    return false;
   }
 }
 

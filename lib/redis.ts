@@ -61,6 +61,23 @@ export interface KeywordHistory {
 }
 
 // Redis operations
+// Track deleted keywords
+export async function getDeletedKeywords(playlistId: string): Promise<Set<string>> {
+  const redis = await getRedisClient();
+  const deletedData = await redis.hGet(`playlist:${playlistId}`, 'deleted_keywords');
+  if (deletedData) {
+    return new Set(JSON.parse(deletedData));
+  }
+  return new Set();
+}
+
+export async function addDeletedKeyword(playlistId: string, keyword: string) {
+  const redis = await getRedisClient();
+  const deleted = await getDeletedKeywords(playlistId);
+  deleted.add(keyword.toLowerCase());
+  await redis.hSet(`playlist:${playlistId}`, 'deleted_keywords', JSON.stringify(Array.from(deleted)));
+}
+
 export async function savePlaylistData(playlistId: string, data: PlaylistData) {
   const redis = await getRedisClient();
   
@@ -69,11 +86,35 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
   // Get existing playlist data to preserve historical rankings
   const existingData = await getPlaylistData(playlistId);
   
+  // Get deleted keywords to filter them out
+  const deletedKeywords = await getDeletedKeywords(playlistId);
+  
   if (existingData) {
     console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
+    console.log(`[Redis] Deleted keywords: ${Array.from(deletedKeywords).join(', ') || 'none'}`);
     
-    // CRITICAL: Filter out invalid territories from existing data BEFORE merging
+    // Track keywords that were in existing but not in new data (these were deleted from UI)
+    const newKeywordSet = new Set(data.keywords.map(k => k.keyword.toLowerCase()));
+    existingData.keywords.forEach(k => {
+      if (!newKeywordSet.has(k.keyword.toLowerCase()) && !deletedKeywords.has(k.keyword.toLowerCase())) {
+        console.log(`[Redis] Marking keyword as deleted: "${k.keyword}"`);
+        deletedKeywords.add(k.keyword.toLowerCase());
+      }
+    });
+    
+    // Save updated deleted keywords list
+    if (deletedKeywords.size > 0) {
+      await redis.hSet(`playlist:${playlistId}`, 'deleted_keywords', JSON.stringify(Array.from(deletedKeywords)));
+    }
+    
+    // CRITICAL: Filter out invalid territories AND deleted keywords from existing data BEFORE merging
     const validExistingKeywords = existingData.keywords.filter(k => {
+      // Check if keyword was deleted
+      if (deletedKeywords.has(k.keyword.toLowerCase())) {
+        console.log(`[Redis] Filtering out deleted keyword: "${k.keyword}"`);
+        return false;
+      }
+      
       const territory = k.territory?.toLowerCase().trim();
       const isValid = territory && territory !== 'unknown' && territory.length === 2 && /^[a-z]{2}$/.test(territory);
       if (!isValid) {
@@ -102,6 +143,12 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     
     // Add new keywords while preserving existing ones
     data.keywords.forEach(newKeyword => {
+      // Check if this keyword was previously deleted
+      if (deletedKeywords.has(newKeyword.keyword.toLowerCase())) {
+        console.log(`[Redis] Skipping deleted keyword: "${newKeyword.keyword}"`);
+        return; // Skip deleted keywords
+      }
+      
       // Validate new keyword territory too
       const territory = newKeyword.territory?.toLowerCase().trim();
       if (!territory || territory === 'unknown' || territory.length !== 2 || !/^[a-z]{2}$/.test(territory)) {
@@ -133,6 +180,17 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     console.log(`[Redis] Keywords by date:`, dateDistribution);
   } else {
     console.log(`[Redis] No existing data found, saving ${data.keywords.length} keywords`);
+    
+    // Filter out deleted keywords even for new data
+    if (deletedKeywords.size > 0) {
+      data.keywords = data.keywords.filter(k => {
+        if (deletedKeywords.has(k.keyword.toLowerCase())) {
+          console.log(`[Redis] Filtering out deleted keyword from new data: "${k.keyword}"`);
+          return false;
+        }
+        return true;
+      });
+    }
   }
   
   await redis.hSet(`playlist:${playlistId}`, 'data', JSON.stringify(data));
