@@ -37,6 +37,55 @@ const getTrendIcon = (trend?: 'up' | 'down' | 'stable' | 'new', change?: number)
   }
 };
 
+const getFlagEmoji = (countryCode: string) => {
+  const code = countryCode.toUpperCase();
+  // Common country code to flag emoji mapping
+  const flags: { [key: string]: string } = {
+    'US': '🇺🇸', 'GB': '🇬🇧', 'UK': '🇬🇧', 'DE': '🇩🇪', 'FR': '🇫🇷', 'ES': '🇪🇸', 
+    'IT': '🇮🇹', 'NL': '🇳🇱', 'PL': '🇵🇱', 'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰',
+    'FI': '🇫🇮', 'BE': '🇧🇪', 'AT': '🇦🇹', 'CH': '🇨🇭', 'PT': '🇵🇹', 'GR': '🇬🇷',
+    'TR': '🇹🇷', 'RU': '🇷🇺', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CA': '🇨🇦',
+    'AU': '🇦🇺', 'NZ': '🇳🇿', 'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'IN': '🇮🇳',
+    'ID': '🇮🇩', 'TH': '🇹🇭', 'MY': '🇲🇾', 'SG': '🇸🇬', 'PH': '🇵🇭', 'VN': '🇻🇳',
+    'ZA': '🇿🇦', 'EG': '🇪🇬', 'SA': '🇸🇦', 'AE': '🇦🇪', 'IL': '🇮🇱', 'CZ': '🇨🇿',
+    'HU': '🇭🇺', 'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'RS': '🇷🇸', 'SK': '🇸🇰',
+    'SI': '🇸🇮', 'LT': '🇱🇹', 'LV': '🇱🇻', 'EE': '🇪🇪', 'IE': '🇮🇪', 'CL': '🇨🇱',
+    'CO': '🇨🇴', 'PE': '🇵🇪', 'VE': '🇻🇪', 'EC': '🇪🇨', 'UY': '🇺🇾', 'PY': '🇵🇾',
+    'BO': '🇧🇴', 'CR': '🇨🇷', 'PA': '🇵🇦', 'DO': '🇩🇴', 'GT': '🇬🇹', 'HN': '🇭🇳',
+    'SV': '🇸🇻', 'NI': '🇳🇮', 'TW': '🇹🇼', 'HK': '🇭🇰', 'TN': '🇹🇳', 'MA': '🇲🇦',
+    'DZ': '🇩🇿', 'KE': '🇰🇪', 'NG': '🇳🇬', 'IS': '🇮🇸', 'LU': '🇱🇺', 'MT': '🇲🇹',
+    'CY': '🇨🇾', 'BY': '🇧🇾', 'UA': '🇺🇦', 'KZ': '🇰🇿', 'UZ': '🇺🇿', 'BD': '🇧🇩',
+    'PK': '🇵🇰', 'LK': '🇱🇰', 'MM': '🇲🇲', 'KH': '🇰🇭', 'LA': '🇱🇦', 'JO': '🇯🇴',
+    'LB': '🇱🇧', 'KW': '🇰🇼', 'QA': '🇶🇦', 'BH': '🇧🇭', 'OM': '🇴🇲', 'GH': '🇬🇭',
+    'ET': '🇪🇹', 'UG': '🇺🇬', 'TZ': '🇹🇿', 'MZ': '🇲🇿', 'ZW': '🇿🇼', 'BW': '🇧🇼',
+    'NA': '🇳🇦', 'AO': '🇦🇴', 'LY': '🇱🇾', 'SD': '🇸🇩', 'MR': '🇲🇷', 'SN': '🇸🇳',
+    'ML': '🇲🇱', 'BF': '🇧🇫', 'NE': '🇳🇪', 'TD': '🇹🇩', 'SO': '🇸🇴', 'RW': '🇷🇼',
+    'BI': '🇧🇮', 'MW': '🇲🇼', 'ZM': '🇿🇲', 'MG': '🇲🇬', 'RE': '🇷🇪', 'MU': '🇲🇺',
+    'SC': '🇸🇨', 'CI': '🇨🇮', 'CM': '🇨🇲', 'GA': '🇬🇦', 'CG': '🇨🇬', 'CD': '🇨🇩',
+    'GQ': '🇬🇶', 'CF': '🇨🇫', 'ST': '🇸🇹', 'CV': '🇨🇻', 'GW': '🇬🇼', 'GM': '🇬🇲',
+    'GN': '🇬🇳', 'SL': '🇸🇱', 'LR': '🇱🇷', 'TG': '🇹🇬', 'BJ': '🇧🇯', 'GY': '🇬🇾',
+    'SR': '🇸🇷', 'GF': '🇬🇫', 'PF': '🇵🇫', 'NC': '🇳🇨', 'FJ': '🇫🇯', 'GU': '🇬🇺',
+    'PR': '🇵🇷', 'JM': '🇯🇲', 'TT': '🇹🇹', 'BB': '🇧🇧', 'BS': '🇧🇸', 'BM': '🇧🇲',
+    'KY': '🇰🇾', 'VG': '🇻🇬', 'VI': '🇻🇮', 'LC': '🇱🇨', 'VC': '🇻🇨', 'GD': '🇬🇩',
+    'AG': '🇦🇬', 'DM': '🇩🇲', 'KN': '🇰🇳', 'BZ': '🇧🇿', 'AW': '🇦🇼', 'CW': '🇨🇼',
+    'SX': '🇸🇽', 'MQ': '🇲🇶', 'GP': '🇬🇵', 'HT': '🇭🇹', 'TC': '🇹🇨', 'AI': '🇦🇮',
+    'MF': '🇲🇫', 'BL': '🇧🇱', 'PM': '🇵🇲', 'GL': '🇬🇱', 'FO': '🇫🇴', 'AD': '🇦🇩',
+    'MC': '🇲🇨', 'SM': '🇸🇲', 'VA': '🇻🇦', 'LI': '🇱🇮', 'ME': '🇲🇪', 'MK': '🇲🇰',
+    'AL': '🇦🇱', 'BA': '🇧🇦', 'XK': '🇽🇰', 'MD': '🇲🇩', 'AM': '🇦🇲', 'GE': '🇬🇪',
+    'AZ': '🇦🇿', 'TM': '🇹🇲', 'TJ': '🇹🇯', 'KG': '🇰🇬', 'MN': '🇲🇳', 'NP': '🇳🇵',
+    'BT': '🇧🇹', 'AF': '🇦🇫', 'IQ': '🇮🇶', 'IR': '🇮🇷', 'SY': '🇸🇾', 'YE': '🇾🇪',
+    'PS': '🇵🇸', 'BN': '🇧🇳', 'TL': '🇹🇱', 'PG': '🇵🇬', 'SB': '🇸🇧', 'VU': '🇻🇺',
+    'WS': '🇼🇸', 'KI': '🇰🇮', 'TO': '🇹🇴', 'PW': '🇵🇼', 'MH': '🇲🇭', 'FM': '🇫🇲',
+    'NR': '🇳🇷', 'TV': '🇹🇻', 'MP': '🇲🇵', 'AS': '🇦🇸', 'CK': '🇨🇰', 'NU': '🇳🇺',
+    'TK': '🇹🇰', 'WF': '🇼🇫', 'SH': '🇸🇭', 'PN': '🇵🇳', 'IO': '🇮🇴', 'FK': '🇫🇰',
+    'GS': '🇬🇸', 'AQ': '🇦🇶', 'GI': '🇬🇮', 'JE': '🇯🇪', 'GG': '🇬🇬', 'IM': '🇮🇲',
+    'AX': '🇦🇽', 'SJ': '🇸🇯', 'BV': '🇧🇻', 'CX': '🇨🇽', 'CC': '🇨🇨', 'NF': '🇳🇫',
+    'HM': '🇭🇲', 'TF': '🇹🇫', 'YT': '🇾🇹', 'EH': '🇪🇭', 'MO': '🇲🇴', 'MV': '🇲🇻',
+    'KM': '🇰🇲', 'DJ': '🇩🇯', 'ER': '🇪🇷', 'LS': '🇱🇸', 'SZ': '🇸🇿', 'SS': '🇸🇸'
+  };
+  return flags[code] || code.toUpperCase();
+};
+
 export default function KeywordTableWithSections({ 
   keywords, 
   onKeywordSelect, 
@@ -197,32 +246,35 @@ export default function KeywordTableWithSections({
             {getTrendIcon(keyword.trend, keyword.change)}
           </div>
         </td>
-        <td 
-          className="py-3 px-4"
-          onClick={() => onKeywordSelect(keyword.keyword, keyword.territory)}
-        >
+        <td className="py-3 px-4">
           <div className="flex items-center gap-2">
             {isStarred && <span>⭐</span>}
-            <span className="font-medium">{keyword.keyword}</span>
+            <span 
+              className="font-medium cursor-pointer hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={() => onKeywordSelect(keyword.keyword, keyword.territory)}
+            >
+              {keyword.keyword}
+            </span>
           </div>
         </td>
         <td className="py-3 px-4">
           <div className="flex gap-1 flex-wrap">
-            {keyword.territories.slice(0, 5).map(territory => (
+            {keyword.territories.slice(0, 8).map(territory => (
               <span 
                 key={territory}
-                className="neu-flat px-2 py-1 text-xs rounded"
-                style={{ color: 'var(--text-secondary)' }}
+                className="text-xs"
+                title={territory.toUpperCase()}
               >
-                {territory.toUpperCase()}
+                {getFlagEmoji(territory)}
               </span>
             ))}
-            {keyword.territories.length > 5 && (
+            {keyword.territories.length > 8 && (
               <span 
-                className="neu-flat px-2 py-1 text-xs rounded"
+                className="text-xs"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                +{keyword.territories.length - 5}
+                +{keyword.territories.length - 8}
               </span>
             )}
           </div>
@@ -299,16 +351,16 @@ export default function KeywordTableWithSections({
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
-      return <span style={{ opacity: 0.3 }}>↕</span>;
+      return <span style={{ opacity: 0.3, marginLeft: '4px' }}>↕</span>;
     }
-    return sortDirection === 'asc' ? '↑' : '↓';
+    return <span style={{ marginLeft: '4px' }}>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
   return (
     <div className="neu-card">
       <div className="mb-4">
         {/* Search Input - Smaller */}
-        <div className="neu-flat flex items-center gap-2 px-3 py-2 mb-4">
+        <div className="neu-flat flex items-center gap-2 px-3 py-2 mb-6">
           <svg className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -354,29 +406,29 @@ export default function KeywordTableWithSections({
                 <tr style={{ borderBottom: '1px solid var(--shadow-color)' }}>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)' }}
+                    style={{ color: 'var(--text-secondary)', width: '100px' }}
                     onClick={() => handleHeaderClick('position')}
                   >
-                    Position {sortField === 'position' && getSortIcon('position')}
+                    Position{getSortIcon('position')}
                   </th>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)' }}
+                    style={{ color: 'var(--text-secondary)', width: '300px' }}
                     onClick={() => handleHeaderClick('keyword')}
                   >
-                    Keyword {sortField === 'keyword' && getSortIcon('keyword')}
+                    Keyword{getSortIcon('keyword')}
                   </th>
-                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)' }}>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '150px' }}>
                     Territories
                   </th>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)' }}
+                    style={{ color: 'var(--text-secondary)', width: '150px' }}
                     onClick={() => handleHeaderClick('updated')}
                   >
-                    Last Updated {sortField === 'updated' && getSortIcon('updated')}
+                    Last Updated{getSortIcon('updated')}
                   </th>
-                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)' }}>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '150px' }}>
                     Actions
                   </th>
                 </tr>
