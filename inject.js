@@ -146,6 +146,12 @@
       
       if (playlists.length > 0) {
         console.log(`[Spotify Tracker Inject] Found ${playlists.length} playlists for "${keyword}"`);
+        console.log('[Spotify Tracker Inject] Debug - Market sources:', {
+          fromVariables: variables.market || 'none',
+          capturedMarket: capturedMarket || 'none',
+          sessionStorage: sessionStorage.getItem('spotify-tracker-market') || 'none',
+          willUse: variables.market || capturedMarket || 'will default'
+        });
         
         // Get existing results for this keyword
         const existingResults = allSearchResults.get(keyword) || [];
@@ -247,10 +253,10 @@
           }
         }
         
-        // DO NOT default to any territory - wait until we have a real one
-        if (!territory || territory === 'Unknown') {
-          console.log('[Spotify Tracker Inject] WARNING: No valid territory found, skipping this capture');
-          return; // Don't send data without a valid territory
+        // Default to 'us' if no territory found (instead of blocking)
+        if (!territory || territory === 'Unknown' || territory === 'unknown') {
+          console.log('[Spotify Tracker Inject] WARNING: No valid territory found, defaulting to US');
+          territory = 'us'; // Default to US instead of blocking
         }
         
         console.log(`[Spotify Tracker Inject] Final territory: ${territory}`);
