@@ -214,11 +214,15 @@ async function buildPlaylistData(rankings) {
     if (!playlistGroups[ranking.playlistId]) {
       playlistGroups[ranking.playlistId] = {
         rankings: [],
-        playlist: ranking
+        playlistInfo: {
+          playlistId: ranking.playlistId,
+          playlistName: ranking.playlistName,
+          playlistImage: ranking.playlistImage
+        }
       };
     }
     
-    // Add with cleaned territory
+    // Add with cleaned territory - each ranking maintains its own data
     playlistGroups[ranking.playlistId].rankings.push({
       ...ranking,
       territory: territory // Ensure lowercase
@@ -228,7 +232,10 @@ async function buildPlaylistData(rankings) {
   // Convert to dashboard format - return ALL playlists as an array
   const allPlaylistData = [];
   
+  console.log(`[Background] Processing ${Object.keys(playlistGroups).length} playlists:`, Object.keys(playlistGroups));
+  
   for (const [playlistId, playlistGroup] of Object.entries(playlistGroups)) {
+    console.log(`[Background] Processing playlist ${playlistId} with ${playlistGroup.rankings.length} rankings`);
     const watchedPlaylist = watchedPlaylists[playlistId];
     
     // Rankings are already filtered and validated
@@ -240,19 +247,19 @@ async function buildPlaylistData(rankings) {
     // Get the image from the most recent ranking or watched playlist
     const playlistImage = playlistGroup.rankings[0]?.playlistImage || 
                           watchedPlaylist?.image || 
-                          playlistGroup.playlist.playlistImage || 
+                          playlistGroup.playlistInfo.playlistImage || 
                           '';
     
-    console.log(`[Background] Image sources for ${playlistGroup.playlist.playlistName}:`, {
+    console.log(`[Background] Image sources for ${playlistGroup.playlistInfo.playlistName}:`, {
       fromRanking: playlistGroup.rankings[0]?.playlistImage || 'none',
       fromWatched: watchedPlaylist?.image || 'none',
-      fromPlaylist: playlistGroup.playlist.playlistImage || 'none',
+      fromPlaylist: playlistGroup.playlistInfo.playlistImage || 'none',
       final: playlistImage || 'none'
     });
     
     allPlaylistData.push({
       id: playlistId,
-      name: playlistGroup.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
+      name: playlistGroup.playlistInfo.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
       image: playlistImage,
       keywords: playlistGroup.rankings.map(ranking => ({
         keyword: ranking.keyword,
