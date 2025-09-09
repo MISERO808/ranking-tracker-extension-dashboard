@@ -1,10 +1,12 @@
 // inject.js - Injected directly into the page context
 // This allows us to intercept fetch/XMLHttpRequest calls
 
-console.log('[Spotify Tracker Inject] Script starting...');
+// Delay initialization slightly to let Spotify load first
+setTimeout(() => {
+  console.log('[Spotify Tracker Inject] Script starting...');
 
-(function() {
-  console.log('[Spotify Tracker Inject] Interceptor loaded - Version 1.2');
+  (function() {
+    console.log('[Spotify Tracker Inject] Interceptor loaded - Version 1.3');
   
   let capturedTokens = {};
   let capturedUserId = null;  // Define at top level
@@ -19,10 +21,17 @@ console.log('[Spotify Tracker Inject] Script starting...');
   window.fetch = async function(...args) {
     const [url, options = {}] = args;
     
-    // Only log specific API calls, not all (less intrusive)
-    // if (url.includes('/api/')) {
-    //   console.log(`[Spotify Tracker Inject] API Call: ${url.substring(0, 100)}`);
-    // }
+    // Call original fetch FIRST to avoid timing issues
+    let response;
+    try {
+      response = await originalFetch.apply(this, args);
+    } catch (error) {
+      // If fetch fails, just throw the error without interfering
+      throw error;
+    }
+    
+    // Now process the request/response AFTER the original call succeeded
+    // This prevents interfering with Spotify's initial page load
     
     // PRIORITY: Capture market from masthead API (most reliable)
     if (url.includes('/api/masthead/v1/masthead')) {
@@ -51,7 +60,7 @@ console.log('[Spotify Tracker Inject] Script starting...');
       }
     }
     
-    // Capture tokens from headers
+    // Capture tokens from headers (after successful response)
     if (options.headers) {
       if (options.headers['Authorization']) {
         capturedTokens.accessToken = options.headers['Authorization'].replace('Bearer ', '');
@@ -69,15 +78,6 @@ console.log('[Spotify Tracker Inject] Script starting...');
           }
         }));
       }
-    }
-    
-    // Call original fetch immediately to avoid timing issues
-    let response;
-    try {
-      response = await originalFetch.apply(this, args);
-    } catch (error) {
-      // If fetch fails, just throw the error without interfering
-      throw error;
     }
     
     // Intercept search results
@@ -499,4 +499,5 @@ console.log('[Spotify Tracker Inject] Script starting...');
   };
   
   console.log('[Spotify Tracker Inject] Interception ready');
-})();
+  })();
+}, 100); // Delay by 100ms to let Spotify initialize first
