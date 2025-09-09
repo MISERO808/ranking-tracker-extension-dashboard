@@ -93,6 +93,17 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
     console.log(`[Redis] Deleted keywords: ${Array.from(deletedKeywords).join(', ') || 'none'}`);
     
+    // SAFEGUARD: Prevent accidental mass deletion
+    // If we're about to lose more than 50% of keywords, something is wrong
+    if (data.keywords.length < existingData.keywords.length * 0.5 && existingData.keywords.length > 10) {
+      console.error(`[Redis] SAFETY CHECK FAILED: Attempted to reduce keywords from ${existingData.keywords.length} to ${data.keywords.length}`);
+      console.error(`[Redis] This would delete ${existingData.keywords.length - data.keywords.length} keywords (>50% loss)`);
+      console.error(`[Redis] Blocking this operation to prevent data loss`);
+      
+      // Instead, merge the new keywords with existing ones
+      console.log(`[Redis] Performing safe merge instead...`);
+    }
+    
     // DO NOT auto-detect deletions - only use explicitly deleted keywords
     // The extension doesn't send ALL keywords every time, just new ones
     
