@@ -172,25 +172,43 @@ async function syncToBackend(rankings, backendUrl) {
       });
       
       try {
+        console.log(`[Background] Sending POST request for ${playlistData.name}...`);
+        
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const response = await fetch(`${backendUrl}/api/playlists`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${tokens.accessToken || ''}`
           },
-          body: JSON.stringify(playlistData)
+          body: JSON.stringify(playlistData),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        console.log(`[Background] Response received for ${playlistData.name}: ${response.status}`);
         
         if (response.ok) {
           console.log(`[Background] ✅ Sync successful for playlist: ${playlistData.name}`);
         } else {
           console.error(`[Background] ❌ Sync failed for playlist ${playlistData.name}:`, response.status, response.statusText);
-          const errorText = await response.text();
-          console.error('[Background] Error details:', errorText);
+          try {
+            const errorText = await response.text();
+            console.error('[Background] Error details:', errorText);
+          } catch (e) {
+            console.error('[Background] Could not read error text');
+          }
           allSuccess = false;
         }
       } catch (fetchError) {
-        console.error(`[Background] ❌ Fetch error for playlist ${playlistData.name}:`, fetchError);
+        if (fetchError.name === 'AbortError') {
+          console.error(`[Background] ❌ Request timeout for playlist ${playlistData.name}`);
+        } else {
+          console.error(`[Background] ❌ Fetch error for playlist ${playlistData.name}:`, fetchError);
+        }
         allSuccess = false;
       }
     }
