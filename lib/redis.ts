@@ -93,19 +93,8 @@ export async function savePlaylistData(playlistId: string, data: PlaylistData) {
     console.log(`[Redis] Found existing data with ${existingData.keywords.length} keywords`);
     console.log(`[Redis] Deleted keywords: ${Array.from(deletedKeywords).join(', ') || 'none'}`);
     
-    // Track keywords that were in existing but not in new data (these were deleted from UI)
-    const newKeywordSet = new Set(data.keywords.map(k => k.keyword.toLowerCase()));
-    existingData.keywords.forEach(k => {
-      if (!newKeywordSet.has(k.keyword.toLowerCase()) && !deletedKeywords.has(k.keyword.toLowerCase())) {
-        console.log(`[Redis] Marking keyword as deleted: "${k.keyword}"`);
-        deletedKeywords.add(k.keyword.toLowerCase());
-      }
-    });
-    
-    // Save updated deleted keywords list
-    if (deletedKeywords.size > 0) {
-      await redis.hSet(`playlist:${playlistId}`, 'deleted_keywords', JSON.stringify(Array.from(deletedKeywords)));
-    }
+    // DO NOT auto-detect deletions - only use explicitly deleted keywords
+    // The extension doesn't send ALL keywords every time, just new ones
     
     // CRITICAL: Filter out invalid territories AND deleted keywords from existing data BEFORE merging
     const validExistingKeywords = existingData.keywords.filter(k => {
