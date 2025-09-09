@@ -287,7 +287,7 @@ async function processSearchResults(data) {
       // Skip if no valid territory
       if (!data.territory || data.territory === 'Unknown' || data.territory.length !== 2) {
         console.log('[Content] Skipping - invalid territory:', data.territory);
-        continue;
+        return; // Use return instead of continue in forEach
       }
       
       // Include territory and minute in the session key to prevent same-minute duplicates
