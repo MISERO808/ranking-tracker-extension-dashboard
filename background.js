@@ -74,15 +74,25 @@ async function handleNewRankings(rankings) {
   // Track what we've already synced to avoid re-sending deleted items
   const { syncedRankings = {} } = await chrome.storage.local.get('syncedRankings');
   
-  // Filter out rankings we've already synced
+  // Filter out rankings we've already synced AND prevent same-minute duplicates
   const newRankingsToSync = [];
   const syncKeysToAdd = [];
+  const minuteKeys = new Set();
   
   for (const ranking of rankings) {
     const syncKey = `${ranking.playlistId}-${ranking.keyword}-${ranking.territory}-${ranking.timestamp}`;
-    if (!syncedRankings[syncKey]) {
+    
+    // Create a minute-level key to prevent same-minute duplicates
+    const date = new Date(ranking.timestamp);
+    const minuteKey = `${ranking.playlistId}-${ranking.keyword}-${ranking.territory}-${ranking.position}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+    
+    // Skip if we've already synced this exact ranking OR if we already have a ranking for this minute
+    if (!syncedRankings[syncKey] && !minuteKeys.has(minuteKey)) {
       newRankingsToSync.push(ranking);
       syncKeysToAdd.push(syncKey);
+      minuteKeys.add(minuteKey);
+    } else if (minuteKeys.has(minuteKey)) {
+      console.log(`[Background] Skipping duplicate same-minute ranking: ${ranking.keyword} at position ${ranking.position}`);
     }
   }
   
