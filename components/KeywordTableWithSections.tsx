@@ -247,16 +247,16 @@ export default function KeywordTableWithSections({
           </div>
         </td>
         <td className="py-3 px-4">
-          <div className="flex items-center gap-2">
+          <Link 
+            href={`/keyword/${playlistId}/${encodeURIComponent(keyword.keyword)}`}
+            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+            style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
+          >
             {isStarred && <span>⭐</span>}
-            <span 
-              className="font-medium cursor-pointer hover:opacity-70 transition-opacity"
-              style={{ color: 'var(--text-primary)' }}
-              onClick={() => onKeywordSelect(keyword.keyword, keyword.territory)}
-            >
+            <span className="font-medium">
               {keyword.keyword}
             </span>
-          </div>
+          </Link>
         </td>
         <td className="py-3 px-4">
           <div className="flex gap-1 flex-wrap">
@@ -406,29 +406,29 @@ export default function KeywordTableWithSections({
                 <tr style={{ borderBottom: '1px solid var(--shadow-color)' }}>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)', width: '100px' }}
+                    style={{ color: 'var(--text-secondary)', width: '15%' }}
                     onClick={() => handleHeaderClick('position')}
                   >
                     Position{getSortIcon('position')}
                   </th>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)', width: '300px' }}
+                    style={{ color: 'var(--text-secondary)', width: '35%' }}
                     onClick={() => handleHeaderClick('keyword')}
                   >
                     Keyword{getSortIcon('keyword')}
                   </th>
-                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '150px' }}>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
                     Territories
                   </th>
                   <th 
                     className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)', width: '150px' }}
+                    style={{ color: 'var(--text-secondary)', width: '20%' }}
                     onClick={() => handleHeaderClick('updated')}
                   >
                     Last Updated{getSortIcon('updated')}
                   </th>
-                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '150px' }}>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
                     Actions
                   </th>
                 </tr>
@@ -452,29 +452,29 @@ export default function KeywordTableWithSections({
               <tr style={{ borderBottom: '1px solid var(--shadow-color)' }}>
                 <th 
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: 'var(--text-secondary)', width: '15%' }}
                   onClick={() => handleHeaderClick('position')}
                 >
                   Position {sortField === 'position' && getSortIcon('position')}
                 </th>
                 <th 
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: 'var(--text-secondary)', width: '35%' }}
                   onClick={() => handleHeaderClick('keyword')}
                 >
                   Keyword {sortField === 'keyword' && getSortIcon('keyword')}
                 </th>
-                <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)' }}>
+                <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
                   Territories
                 </th>
                 <th 
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: 'var(--text-secondary)', width: '20%' }}
                   onClick={() => handleHeaderClick('updated')}
                 >
                   Last Updated {sortField === 'updated' && getSortIcon('updated')}
                 </th>
-                <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)' }}>
+                <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
                   Actions
                 </th>
               </tr>
