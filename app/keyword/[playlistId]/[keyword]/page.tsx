@@ -139,8 +139,8 @@ export default function KeywordDetail() {
     return null;
   };
 
-  // Create Spotify search URL
-  const spotifySearchUrl = `https://open.spotify.com/search/${encodeURIComponent(keyword)}`;
+  // Create Spotify playlist search URL
+  const spotifySearchUrl = `https://open.spotify.com/search/${encodeURIComponent(keyword)}/playlists`;
 
   return (
     <div className="min-h-screen py-8">
@@ -176,7 +176,7 @@ export default function KeywordDetail() {
               className="neu-btn"
               style={{ color: 'var(--lilac)', textDecoration: 'none' }}
             >
-              Search on Spotify
+              Search Playlists on Spotify
             </a>
           </div>
         </div>

@@ -1,8 +1,10 @@
 // inject.js - Injected directly into the page context
 // This allows us to intercept fetch/XMLHttpRequest calls
 
+console.log('[Spotify Tracker Inject] Script starting...');
+
 (function() {
-  console.log('[Spotify Tracker Inject] Interceptor loaded');
+  console.log('[Spotify Tracker Inject] Interceptor loaded - Version 1.2');
   
   let capturedTokens = {};
   let capturedUserId = null;  // Define at top level
@@ -12,15 +14,15 @@
   let allSearchResults = new Map(); // Store all results by keyword
   let bestPositions = new Map(); // Track best position for each playlist
   
-  // Override fetch to intercept API calls
+  // Override fetch to intercept API calls (more subtly)
   const originalFetch = window.fetch;
   window.fetch = async function(...args) {
     const [url, options = {}] = args;
     
-    // Log ALL API calls to debug
-    if (url.includes('/api/')) {
-      console.log(`[Spotify Tracker Inject] API Call: ${url.substring(0, 100)}`);
-    }
+    // Only log specific API calls, not all (less intrusive)
+    // if (url.includes('/api/')) {
+    //   console.log(`[Spotify Tracker Inject] API Call: ${url.substring(0, 100)}`);
+    // }
     
     // PRIORITY: Capture market from masthead API (most reliable)
     if (url.includes('/api/masthead/v1/masthead')) {
@@ -69,8 +71,14 @@
       }
     }
     
-    // Call original fetch
-    const response = await originalFetch.apply(this, args);
+    // Call original fetch immediately to avoid timing issues
+    let response;
+    try {
+      response = await originalFetch.apply(this, args);
+    } catch (error) {
+      // If fetch fails, just throw the error without interfering
+      throw error;
+    }
     
     // Intercept search results
     if (url.includes('/pathfinder/v2/query') && options.body) {

@@ -1,7 +1,8 @@
 // content.js - Injected into Spotify pages
 // This script intercepts API calls and shows ranking overlays
 
-console.log('[Spotify Tracker] Content script loaded');
+console.log('[Spotify Tracker] Content script loaded - Version 1.1');
+console.log('[Spotify Tracker] Current URL:', window.location.href);
 
 // Inject our interceptor script into the page
 const script = document.createElement('script');
