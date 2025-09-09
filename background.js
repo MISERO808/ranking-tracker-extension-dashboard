@@ -203,11 +203,18 @@ async function buildPlaylistData(rankings) {
   
   // ONLY send NEW rankings, not historical data
   // Historical data may contain old/invalid territories
+  console.log(`[Background] Processing ${rankings.length} rankings:`, rankings.map(r => ({
+    playlist: r.playlistName,
+    id: r.playlistId,
+    keyword: r.keyword,
+    territory: r.territory
+  })));
+  
   rankings.forEach(ranking => {
     // Clean and validate territory BEFORE grouping
     const territory = ranking.territory?.toLowerCase().trim();
     if (!territory || territory === 'unknown' || territory.length !== 2) {
-      console.log(`[Background] Skipping invalid territory: "${ranking.territory}"`);
+      console.log(`[Background] Skipping invalid territory: "${ranking.territory}" for ${ranking.playlistName}`);
       return; // Skip this ranking
     }
     
@@ -220,6 +227,7 @@ async function buildPlaylistData(rankings) {
           playlistImage: ranking.playlistImage
         }
       };
+      console.log(`[Background] Created group for playlist: ${ranking.playlistName} (${ranking.playlistId})`);
     }
     
     // Add with cleaned territory - each ranking maintains its own data
@@ -227,6 +235,7 @@ async function buildPlaylistData(rankings) {
       ...ranking,
       territory: territory // Ensure lowercase
     });
+    console.log(`[Background] Added ranking to ${ranking.playlistName}: keyword="${ranking.keyword}", position=${ranking.position}, territory=${territory}`);
   });
   
   // Convert to dashboard format - return ALL playlists as an array
