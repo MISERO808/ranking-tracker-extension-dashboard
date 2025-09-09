@@ -173,10 +173,11 @@ async function syncToBackend(rankings, backendUrl) {
       
       try {
         console.log(`[Background] Sending POST request for ${playlistData.name}...`);
+        console.log(`[Background] Request body:`, JSON.stringify(playlistData, null, 2));
         
         // Add timeout to prevent hanging
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased)
         
         const response = await fetch(`${backendUrl}/api/playlists`, {
           method: 'POST',
