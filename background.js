@@ -168,7 +168,7 @@ async function syncToBackend(rankings, backendUrl) {
       console.log(`[Background] Syncing playlist ${i + 1}/${playlistDataArray.length}:`, {
         name: playlistData.name,
         keywordCount: playlistData.keywords.length,
-        url: `${backendUrl}/api/playlists`
+        url: `${backendUrl}/api/playlists/add-rankings`
       });
       
       try {
@@ -179,7 +179,7 @@ async function syncToBackend(rankings, backendUrl) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased)
         
-        const response = await fetch(`${backendUrl}/api/playlists`, {
+        const response = await fetch(`${backendUrl}/api/playlists/add-rankings`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
