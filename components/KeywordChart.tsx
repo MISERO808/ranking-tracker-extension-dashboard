@@ -138,6 +138,17 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
   const currentPosition = history.rankings[history.rankings.length - 1]?.position;
   const bestPosition = Math.min(...history.rankings.map(r => r.position));
   const worstPosition = Math.max(...history.rankings.map(r => r.position));
+  
+  // Calculate Y-axis ticks to ensure we start at 1, not 0
+  const minPosition = Math.min(bestPosition, 1);
+  const maxPosition = worstPosition;
+  const yAxisTicks = [];
+  for (let i = minPosition; i <= maxPosition; i += Math.ceil((maxPosition - minPosition) / 5)) {
+    yAxisTicks.push(i);
+  }
+  if (!yAxisTicks.includes(1)) yAxisTicks.unshift(1);
+  if (!yAxisTicks.includes(maxPosition)) yAxisTicks.push(maxPosition);
+  yAxisTicks.sort((a, b) => a - b);
 
   // Calculate trend
   const recentRankings = history.rankings.slice(-5);
@@ -207,9 +218,10 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
               tick={{ fill: '#9CA3AF', fontSize: 12 }}
               axisLine={{ stroke: '#4B5563' }}
               reversed={true} // Lower positions (better rankings) at top
-              domain={[1, 'dataMax']} // Start at 1, not 0
+              domain={[1, 'dataMax + 1']} // Start at 1, not 0, with some padding
               allowDataOverflow={false}
-              ticks={Array.from(new Set(chartData.map(d => d.position))).sort((a, b) => a - b)}
+              ticks={yAxisTicks}
+              interval={0} // Show all specified ticks
             />
             <Tooltip content={<CustomTooltip />} />
             <Line 
