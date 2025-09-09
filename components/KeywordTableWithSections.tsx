@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { KeywordRanking } from '@/lib/redis';
 
@@ -99,6 +99,20 @@ export default function KeywordTableWithSections({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('position');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [showCsvOptions, setShowCsvOptions] = useState(false);
+  const csvDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (csvDropdownRef.current && !csvDropdownRef.current.contains(event.target as Node)) {
+        setShowCsvOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleHeaderClick = (field: SortField) => {
     if (sortField === field) {
@@ -356,28 +370,93 @@ export default function KeywordTableWithSections({
     return <span style={{ marginLeft: '4px' }}>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const downloadCSV = () => {
-    const csvData = processedKeywords.map(keyword => ({
-      Position: keyword.position,
-      Keyword: keyword.keyword,
-      Territories: keyword.territories.join(', '),
-      'Last Updated': new Date(keyword.timestamp).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      Trend: keyword.trend || 'stable',
-      Change: keyword.change || 0
-    }));
+  const downloadCSV = (mode: 'current' | 'all') => {
+    let csvData: any[] = [];
+    let filename = '';
     
-    const headers = Object.keys(csvData[0] || {});
+    if (mode === 'current') {
+      // Export only current territory (what's visible)
+      csvData = processedKeywords.map(keyword => ({
+        Position: keyword.position,
+        Keyword: keyword.keyword,
+        'Last Updated': new Date(keyword.timestamp).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        Territory: selectedCountryFilter ? selectedCountryFilter.toUpperCase() : keyword.territories[0]?.toUpperCase(),
+        Trend: keyword.trend || 'stable',
+        Change: keyword.change || 0
+      }));
+      filename = `keywords-${playlistId}-${selectedCountryFilter || 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
+    } else {
+      // Export all territories with latest ranking for each
+      const allTerritoryData: any[] = [];
+      
+      // Group keywords by normalized keyword text
+      const keywordGroups = keywords.reduce((acc, ranking) => {
+        const normalizedKey = ranking.keyword.toLowerCase().trim();
+        const territory = ranking.territory?.toLowerCase().trim();
+        
+        // Skip invalid territories
+        if (!territory || territory === 'unknown' || territory.length !== 2) {
+          return acc;
+        }
+        
+        if (!acc[normalizedKey]) {
+          acc[normalizedKey] = {};
+        }
+        
+        // Keep only the most recent ranking for each territory
+        if (!acc[normalizedKey][territory] || 
+            new Date(ranking.timestamp) > new Date(acc[normalizedKey][territory].timestamp)) {
+          acc[normalizedKey][territory] = ranking;
+        }
+        
+        return acc;
+      }, {} as { [keyword: string]: { [territory: string]: KeywordRanking } });
+      
+      // Flatten into rows
+      Object.entries(keywordGroups).forEach(([normalizedKey, territories]) => {
+        Object.entries(territories).forEach(([territory, ranking]) => {
+          allTerritoryData.push({
+            Position: ranking.position,
+            Keyword: ranking.keyword,
+            Territory: territory.toUpperCase(),
+            'Last Updated': new Date(ranking.timestamp).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          });
+        });
+      });
+      
+      // Sort by keyword, then territory
+      csvData = allTerritoryData.sort((a, b) => {
+        const keywordCompare = a.Keyword.localeCompare(b.Keyword);
+        if (keywordCompare !== 0) return keywordCompare;
+        return a.Territory.localeCompare(b.Territory);
+      });
+      
+      filename = `keywords-${playlistId}-all-territories-${new Date().toISOString().split('T')[0]}.csv`;
+    }
+    
+    if (csvData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    
+    const headers = Object.keys(csvData[0]);
     const csvContent = [
       headers.join(','),
       ...csvData.map(row => 
         headers.map(header => {
-          const value = row[header as keyof typeof row];
+          const value = row[header];
           // Escape quotes and wrap in quotes if contains comma
           const stringValue = String(value);
           return stringValue.includes(',') || stringValue.includes('"') 
@@ -391,11 +470,12 @@ export default function KeywordTableWithSections({
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `keywords-${playlistId}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setShowCsvOptions(false);
   };
 
   return (
@@ -429,17 +509,47 @@ export default function KeywordTableWithSections({
             )}
           </div>
           
-          {/* CSV Download Button */}
-          <button
-            onClick={downloadCSV}
-            className="neu-btn flex items-center gap-2 ml-4"
-            title="Download as CSV"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            CSV
-          </button>
+          {/* CSV Download Button with Options */}
+          <div className="relative ml-4" ref={csvDropdownRef}>
+            <button
+              onClick={() => setShowCsvOptions(!showCsvOptions)}
+              className="neu-btn flex items-center gap-2"
+              title="Download as CSV"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showCsvOptions && (
+              <div className="absolute right-0 mt-2 w-48 neu-card py-2 z-10">
+                <button
+                  onClick={() => downloadCSV('current')}
+                  className="w-full px-4 py-2 text-left hover:bg-opacity-10 hover:bg-white transition-colors"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <div className="font-medium">Current Territory</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    {selectedCountryFilter ? `Only ${selectedCountryFilter.toUpperCase()}` : 'Currently visible'}
+                  </div>
+                </button>
+                <button
+                  onClick={() => downloadCSV('all')}
+                  className="w-full px-4 py-2 text-left hover:bg-opacity-10 hover:bg-white transition-colors mt-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <div className="font-medium">All Territories</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    Latest rankings for all countries
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Results Count */}
