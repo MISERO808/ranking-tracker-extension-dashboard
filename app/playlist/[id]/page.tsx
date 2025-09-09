@@ -238,14 +238,24 @@ export default function PlaylistDetail() {
                   className="neu-select w-48"
                 >
                   {(() => {
-                    const territories = Array.from(new Set(
-                      playlist.keywords
-                        .map(k => k.territory?.toLowerCase().trim())
-                        .filter(t => t && t !== 'unknown' && t.length === 2) // Only valid 2-letter codes
-                    )).sort();
-                    return territories.map(territory => (
+                    // Count keywords per territory
+                    const territoryData = playlist.keywords.reduce((acc, k) => {
+                      const territory = k.territory?.toLowerCase().trim();
+                      if (territory && territory !== 'unknown' && territory.length === 2) {
+                        const normalizedKeyword = k.keyword.toLowerCase().trim();
+                        if (!acc[territory]) {
+                          acc[territory] = new Set();
+                        }
+                        acc[territory].add(normalizedKeyword);
+                      }
+                      return acc;
+                    }, {} as { [key: string]: Set<string> });
+                    
+                    const sortedTerritories = Object.keys(territoryData).sort();
+                    
+                    return sortedTerritories.map(territory => (
                       <option key={territory} value={territory}>
-                        {territory.toUpperCase()}
+                        {territory.toUpperCase()} ({territoryData[territory].size})
                       </option>
                     ));
                   })()}
