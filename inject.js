@@ -93,24 +93,19 @@ console.log('[Spotify Tracker Inject] Script starting...');
           sessionStorage.setItem('spotify-tracker-market', capturedMarket);
         }
         
-        // Check if this is a search query
-        if (operationName === 'searchTracks' || 
-            operationName === 'searchPlaylists' ||
-            operationName === 'searchAll' ||
-            operationName === 'searchDesktop') {
+        // ONLY capture from playlist-specific searches
+        if (operationName === 'searchPlaylists') {
+          console.log('[Spotify Tracker Inject] Detected playlist-specific search');
           
           // Clone response to read it
           const clonedResponse = response.clone();
           const responseData = await clonedResponse.json();
           
-          // Process based on query type
-          if (operationName === 'searchPlaylists') {
-            // This is playlist-only search, positions are accurate
-            processSearchResponse(responseData, requestBody, true);
-          } else if (operationName === 'searchDesktop' || operationName === 'searchAll') {
-            // Mixed results, positions need adjustment
-            processSearchResponse(responseData, requestBody, false);
-          }
+          // Process playlist-only search results (positions are accurate)
+          processSearchResponse(responseData, requestBody, true);
+        } else if (operationName === 'searchDesktop' || operationName === 'searchAll') {
+          // Ignore general search results - they have different positions
+          console.log('[Spotify Tracker Inject] Ignoring general search (searchDesktop/searchAll) - only capturing playlist tab results');
         }
       } catch (e) {
         // Not a search query or couldn't parse
