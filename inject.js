@@ -241,7 +241,7 @@ setTimeout(() => {
           territory = variables.market.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         }
         
-        // Priority 2: From captured market (masthead API)
+        // Priority 2: From captured market (masthead API) - most reliable
         if (!territory && capturedMarket && capturedMarket !== 'Unknown') {
           territory = capturedMarket.toLowerCase();  // ALWAYS lowercase to prevent duplicates
         }
@@ -262,6 +262,44 @@ setTimeout(() => {
           if (extractedTerritory && extractedTerritory !== 'Unknown') {
             territory = extractedTerritory.toLowerCase();  // ALWAYS lowercase to prevent duplicates
           }
+        }
+        
+        // If no territory found yet and this is the first batch of results, 
+        // wait a bit for masthead API to complete
+        if ((!territory || territory === 'Unknown' || territory === 'unknown') && actualOffset === 0) {
+          console.log('[Spotify Tracker Inject] No territory detected on first results - waiting for masthead API...');
+          
+          // Schedule a retry in 500ms to allow masthead API to complete
+          setTimeout(() => {
+            // Re-check for captured market
+            let retryTerritory = capturedMarket || sessionStorage.getItem('spotify-tracker-market');
+            
+            if (!retryTerritory || retryTerritory === 'Unknown') {
+              console.log('[Spotify Tracker Inject] Still no territory after retry, defaulting to DE');
+              retryTerritory = 'de';
+            } else {
+              console.log(`[Spotify Tracker Inject] Territory detected on retry: ${retryTerritory}`);
+            }
+            
+            // Re-send the data with correct territory
+            window.dispatchEvent(new CustomEvent('spotify-ranking-data', {
+              detail: {
+                type: 'search-results',
+                keyword: keyword,
+                results: existingResults,
+                totalResults: totalCount,
+                capturedResults: existingResults.length,
+                offset: actualOffset,
+                territory: retryTerritory.toLowerCase(),
+                userId: capturedUserId || 'unknown',
+                sessionId: sessionId,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }, 500);
+          
+          // For now, still send with DE default (will be corrected by retry if needed)
+          territory = 'de';
         }
         
         // Default to 'de' if no territory found (instead of blocking)
