@@ -207,6 +207,9 @@ export default function KeywordChart({ playlistId, keyword, territory, allKeywor
               tick={{ fill: '#9CA3AF', fontSize: 12 }}
               axisLine={{ stroke: '#4B5563' }}
               reversed={true} // Lower positions (better rankings) at top
+              domain={[1, 'dataMax']} // Start at 1, not 0
+              allowDataOverflow={false}
+              ticks={Array.from(new Set(chartData.map(d => d.position))).sort((a, b) => a - b)}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line 
