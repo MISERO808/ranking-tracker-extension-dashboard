@@ -142,6 +142,12 @@ async function syncToBackend(rankings, backendUrl) {
     // Convert rankings to playlist format expected by dashboard
     const playlistData = await buildPlaylistData(rankings);
     
+    // CRITICAL: Don't sync if we have too few keywords (likely partial data)
+    if (!playlistData || playlistData.keywords.length === 0) {
+      console.log('[Background] ⚠️ No valid data to sync');
+      return false;
+    }
+    
     console.log('[Background] Syncing playlist data:', {
       name: playlistData.name,
       keywordCount: playlistData.keywords.length,
