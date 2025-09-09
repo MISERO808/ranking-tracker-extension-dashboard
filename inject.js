@@ -17,15 +17,23 @@
   window.fetch = async function(...args) {
     const [url, options = {}] = args;
     
+    // Log ALL API calls to debug
+    if (url.includes('/api/')) {
+      console.log(`[Spotify Tracker Inject] API Call: ${url.substring(0, 100)}`);
+    }
+    
     // PRIORITY: Capture market from masthead API (most reliable)
     if (url.includes('/api/masthead/v1/masthead')) {
+      console.log(`[Spotify Tracker Inject] MASTHEAD API DETECTED: ${url}`);
       const match = url.match(/market=([A-Z]{2})/i);
       if (match) {
         capturedMarket = match[1].toLowerCase();  // ALWAYS lowercase to prevent duplicates
-        console.log(`[Spotify Tracker Inject] Captured market from masthead: ${capturedMarket}`);
+        console.log(`[Spotify Tracker Inject] ✅ Captured market from masthead: ${capturedMarket}`);
         try {
           sessionStorage.setItem('spotify-tracker-market', capturedMarket);
         } catch(e) {}
+      } else {
+        console.log(`[Spotify Tracker Inject] ⚠️ Masthead API called but no market parameter found`);
       }
     }
     
@@ -253,10 +261,10 @@
           }
         }
         
-        // Default to 'us' if no territory found (instead of blocking)
+        // Default to 'de' if no territory found (instead of blocking)
         if (!territory || territory === 'Unknown' || territory === 'unknown') {
-          console.log('[Spotify Tracker Inject] WARNING: No valid territory found, defaulting to US');
-          territory = 'us'; // Default to US instead of blocking
+          console.log('[Spotify Tracker Inject] WARNING: No valid territory found, defaulting to DE');
+          territory = 'de'; // Default to DE instead of blocking
         }
         
         console.log(`[Spotify Tracker Inject] Final territory: ${territory}`);
