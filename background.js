@@ -161,31 +161,41 @@ async function syncToBackend(rankings, backendUrl) {
     
     // Send each playlist separately to the dashboard
     let allSuccess = true;
-    for (const playlistData of playlistDataArray) {
-      console.log('[Background] Syncing playlist data:', {
+    console.log(`[Background] About to sync ${playlistDataArray.length} playlists to dashboard`);
+    
+    for (let i = 0; i < playlistDataArray.length; i++) {
+      const playlistData = playlistDataArray[i];
+      console.log(`[Background] Syncing playlist ${i + 1}/${playlistDataArray.length}:`, {
         name: playlistData.name,
         keywordCount: playlistData.keywords.length,
         url: `${backendUrl}/api/playlists`
       });
       
-      const response = await fetch(`${backendUrl}/api/playlists`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokens.accessToken || ''}`
-        },
-        body: JSON.stringify(playlistData)
-      });
-      
-      if (response.ok) {
-        console.log(`[Background] ✅ Sync successful for playlist: ${playlistData.name}`);
-      } else {
-        console.error(`[Background] ❌ Sync failed for playlist ${playlistData.name}:`, response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('[Background] Error details:', errorText);
+      try {
+        const response = await fetch(`${backendUrl}/api/playlists`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken || ''}`
+          },
+          body: JSON.stringify(playlistData)
+        });
+        
+        if (response.ok) {
+          console.log(`[Background] ✅ Sync successful for playlist: ${playlistData.name}`);
+        } else {
+          console.error(`[Background] ❌ Sync failed for playlist ${playlistData.name}:`, response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('[Background] Error details:', errorText);
+          allSuccess = false;
+        }
+      } catch (fetchError) {
+        console.error(`[Background] ❌ Fetch error for playlist ${playlistData.name}:`, fetchError);
         allSuccess = false;
       }
     }
+    
+    console.log(`[Background] Sync complete. All successful: ${allSuccess}`);
     
     return allSuccess;
   } catch (error) {
