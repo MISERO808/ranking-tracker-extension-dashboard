@@ -34,7 +34,7 @@ export async function POST() {
       const cleanedKeywords: any[] = [];
       
       // Process each keyword+territory group
-      for (const [groupKey, entries] of keywordGroups) {
+      Array.from(keywordGroups.entries()).forEach(([groupKey, entries]) => {
         // Sort by timestamp
         entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         
@@ -53,7 +53,7 @@ export async function POST() {
         });
         
         // For each window, keep only the best ranking (lowest position number)
-        for (const [windowKey, windowEntries] of windows) {
+        Array.from(windows.entries()).forEach(([windowKey, windowEntries]) => {
           if (windowEntries.length > 1) {
             // Found duplicates in same 5-minute window
             const bestEntry = windowEntries.reduce((best, current) => 
@@ -77,8 +77,8 @@ export async function POST() {
             // No duplicates in this window
             cleanedKeywords.push(windowEntries[0]);
           }
-        }
-      }
+        });
+      });
       
       // Update the playlist with cleaned data
       if (cleanedKeywords.length !== playlist.keywords.length) {
@@ -136,7 +136,7 @@ export async function GET() {
       });
       
       // Process each keyword+territory group
-      for (const [groupKey, entries] of keywordGroups) {
+      Array.from(keywordGroups.entries()).forEach(([groupKey, entries]) => {
         // Sort by timestamp
         entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         
@@ -155,7 +155,7 @@ export async function GET() {
         });
         
         // Check for duplicates in each window
-        for (const [windowKey, windowEntries] of windows) {
+        Array.from(windows.entries()).forEach(([windowKey, windowEntries]) => {
           if (windowEntries.length > 1) {
             const bestEntry = windowEntries.reduce((best, current) => 
               current.position < best.position ? current : best
@@ -176,8 +176,8 @@ export async function GET() {
                 .map(e => `#${e.position}`)
             });
           }
-        }
-      }
+        });
+      });
     }
     
     return NextResponse.json({
