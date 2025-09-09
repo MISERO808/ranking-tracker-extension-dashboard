@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PlaylistData } from '@/lib/redis';
-import KeywordTable from '@/components/KeywordTable';
+import KeywordTableEnhanced from '@/components/KeywordTableEnhanced';
 
 export default function PlaylistDetail() {
   const params = useParams();
@@ -260,7 +260,7 @@ export default function PlaylistDetail() {
         <div>
           {/* Keyword Table */}
           <div>
-            <KeywordTable 
+            <KeywordTableEnhanced 
               keywords={playlist.keywords}
               onKeywordSelect={(keyword, territory) => {
                 setSelectedKeyword(keyword);
