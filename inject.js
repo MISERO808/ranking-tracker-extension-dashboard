@@ -265,20 +265,31 @@ setTimeout(() => {
         }
         
         // If no territory found yet and this is the first batch of results, 
-        // wait a bit for masthead API to complete
+        // wait longer for masthead API to complete
         if ((!territory || territory === 'Unknown' || territory === 'unknown') && actualOffset === 0) {
           console.log('[Spotify Tracker Inject] No territory detected on first results - waiting for masthead API...');
           
-          // Schedule a retry in 500ms to allow masthead API to complete
-          setTimeout(() => {
+          // Try multiple times with increasing delays
+          let retryCount = 0;
+          const maxRetries = 3;
+          const retryDelays = [1000, 1500, 2000]; // Wait 1s, then 1.5s, then 2s
+          
+          const retryTerritoryDetection = () => {
             // Re-check for captured market
             let retryTerritory = capturedMarket || sessionStorage.getItem('spotify-tracker-market');
             
             if (!retryTerritory || retryTerritory === 'Unknown') {
-              console.log('[Spotify Tracker Inject] Still no territory after retry, defaulting to DE');
-              retryTerritory = 'de';
+              retryCount++;
+              if (retryCount < maxRetries) {
+                console.log(`[Spotify Tracker Inject] Territory not found (attempt ${retryCount}/${maxRetries}), retrying...`);
+                setTimeout(retryTerritoryDetection, retryDelays[retryCount]);
+                return;
+              } else {
+                console.log('[Spotify Tracker Inject] Territory not found after all retries, defaulting to DE');
+                retryTerritory = 'de';
+              }
             } else {
-              console.log(`[Spotify Tracker Inject] Territory detected on retry: ${retryTerritory}`);
+              console.log(`[Spotify Tracker Inject] Territory detected on retry ${retryCount + 1}: ${retryTerritory}`);
             }
             
             // Re-send the data with correct territory
@@ -296,10 +307,13 @@ setTimeout(() => {
                 timestamp: new Date().toISOString()
               }
             }));
-          }, 500);
+          };
           
-          // For now, still send with DE default (will be corrected by retry if needed)
-          territory = 'de';
+          // Start retry process after first delay
+          setTimeout(retryTerritoryDetection, retryDelays[0]);
+          
+          // Don't send initial data with potentially wrong territory
+          return; // Skip sending the initial event
         }
         
         // Default to 'de' if no territory found (instead of blocking)

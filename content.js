@@ -241,12 +241,12 @@ window.addEventListener('spotify-ranking-data', async (event) => {
       clearTimeout(searchDebounceTimer);
     }
     
-    // Wait 1.5 seconds for page to fully load and no more updates
+    // Wait 2.5 seconds for page to fully load and territory detection retries
     searchDebounceTimer = setTimeout(async () => {
       console.log(`[Spotify Tracker] Processing final results for "${pendingSearchData.keyword}"`);
       await processSearchResults(pendingSearchData);
       pendingSearchData = null;
-    }, 1500);
+    }, 2500);
     
   } else if (data.type === 'tokens-captured') {
     console.log('[Spotify Tracker] Tokens captured');
