@@ -150,38 +150,44 @@ async function syncToBackend(rankings, backendUrl) {
     const { tokens = {} } = await chrome.storage.local.get('tokens');
     
     // Convert rankings to playlist format expected by dashboard
-    const playlistData = await buildPlaylistData(rankings);
+    // This now returns an array of playlists
+    const playlistDataArray = await buildPlaylistData(rankings);
     
-    // CRITICAL: Don't sync if we have too few keywords (likely partial data)
-    if (!playlistData || playlistData.keywords.length === 0) {
+    // CRITICAL: Don't sync if we have no data
+    if (!playlistDataArray || playlistDataArray.length === 0) {
       console.log('[Background] ⚠️ No valid data to sync');
       return false;
     }
     
-    console.log('[Background] Syncing playlist data:', {
-      name: playlistData.name,
-      keywordCount: playlistData.keywords.length,
-      url: `${backendUrl}/api/playlists`
-    });
-    
-    const response = await fetch(`${backendUrl}/api/playlists`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tokens.accessToken || ''}`
-      },
-      body: JSON.stringify(playlistData)
-    });
-    
-    if (response.ok) {
-      console.log('[Background] ✅ Sync successful to dashboard!');
-      return true;
-    } else {
-      console.error('[Background] ❌ Sync failed:', response.status, response.statusText);
-      const errorText = await response.text();
-      console.error('[Background] Error details:', errorText);
-      return false;
+    // Send each playlist separately to the dashboard
+    let allSuccess = true;
+    for (const playlistData of playlistDataArray) {
+      console.log('[Background] Syncing playlist data:', {
+        name: playlistData.name,
+        keywordCount: playlistData.keywords.length,
+        url: `${backendUrl}/api/playlists`
+      });
+      
+      const response = await fetch(`${backendUrl}/api/playlists`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens.accessToken || ''}`
+        },
+        body: JSON.stringify(playlistData)
+      });
+      
+      if (response.ok) {
+        console.log(`[Background] ✅ Sync successful for playlist: ${playlistData.name}`);
+      } else {
+        console.error(`[Background] ❌ Sync failed for playlist ${playlistData.name}:`, response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[Background] Error details:', errorText);
+        allSuccess = false;
+      }
     }
+    
+    return allSuccess;
   } catch (error) {
     console.error('[Background] ❌ Sync error:', error);
     return false;
@@ -219,46 +225,48 @@ async function buildPlaylistData(rankings) {
     });
   });
   
-  // Convert to dashboard format - send the main playlist (first one)
-  const mainPlaylistId = Object.keys(playlistGroups)[0];
-  if (!mainPlaylistId) return null;
+  // Convert to dashboard format - return ALL playlists as an array
+  const allPlaylistData = [];
   
-  const mainPlaylist = playlistGroups[mainPlaylistId];
-  const watchedPlaylist = watchedPlaylists[mainPlaylistId];
-  
-  // Rankings are already filtered and validated
-  if (mainPlaylist.rankings.length === 0) {
-    console.log('[Background] No valid rankings to sync');
-    return null;
-  }
+  for (const [playlistId, playlistGroup] of Object.entries(playlistGroups)) {
+    const watchedPlaylist = watchedPlaylists[playlistId];
+    
+    // Rankings are already filtered and validated
+    if (playlistGroup.rankings.length === 0) {
+      console.log(`[Background] No valid rankings to sync for playlist ${playlistId}`);
+      continue; // Skip this playlist but continue with others
+    }
 
-  // Get the image from the most recent ranking or watched playlist
-  const playlistImage = mainPlaylist.rankings[0]?.playlistImage || 
-                        watchedPlaylist?.image || 
-                        mainPlaylist.playlist.playlistImage || 
-                        '';
+    // Get the image from the most recent ranking or watched playlist
+    const playlistImage = playlistGroup.rankings[0]?.playlistImage || 
+                          watchedPlaylist?.image || 
+                          playlistGroup.playlist.playlistImage || 
+                          '';
+    
+    console.log(`[Background] Image sources for ${playlistGroup.playlist.playlistName}:`, {
+      fromRanking: playlistGroup.rankings[0]?.playlistImage || 'none',
+      fromWatched: watchedPlaylist?.image || 'none',
+      fromPlaylist: playlistGroup.playlist.playlistImage || 'none',
+      final: playlistImage || 'none'
+    });
+    
+    allPlaylistData.push({
+      id: playlistId,
+      name: playlistGroup.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
+      image: playlistImage,
+      keywords: playlistGroup.rankings.map(ranking => ({
+        keyword: ranking.keyword,
+        position: ranking.position,
+        territory: ranking.territory, // Already normalized
+        timestamp: ranking.timestamp,
+        userId: ranking.userId,
+        sessionId: ranking.sessionId
+      })),
+      lastUpdated: new Date().toISOString()
+    });
+  }
   
-  console.log('[Background] Image sources:', {
-    fromRanking: mainPlaylist.rankings[0]?.playlistImage || 'none',
-    fromWatched: watchedPlaylist?.image || 'none',
-    fromPlaylist: mainPlaylist.playlist.playlistImage || 'none',
-    final: playlistImage || 'none'
-  });
-  
-  return {
-    id: mainPlaylistId,
-    name: mainPlaylist.playlist.playlistName || watchedPlaylist?.name || 'Unknown Playlist',
-    image: playlistImage,
-    keywords: mainPlaylist.rankings.map(ranking => ({
-      keyword: ranking.keyword,
-      position: ranking.position,
-      territory: ranking.territory, // Already normalized
-      timestamp: ranking.timestamp,
-      userId: ranking.userId,
-      sessionId: ranking.sessionId
-    })),
-    lastUpdated: new Date().toISOString()
-  };
+  return allPlaylistData.length > 0 ? allPlaylistData : null;
 }
 
 // Listen for tab updates to detect Spotify navigation
