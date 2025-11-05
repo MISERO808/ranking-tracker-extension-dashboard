@@ -32,29 +32,75 @@ export default function PlaylistDetail() {
   useEffect(() => {
     setSelectedTerritory(selectedCountryFilter);
   }, [selectedCountryFilter]);
-  
-  // Load starred keywords from localStorage
+
+  // Load starred keywords from API
   useEffect(() => {
-    const stored = localStorage.getItem(`starred-keywords-${playlistId}`);
-    if (stored) {
-      setStarredKeywords(JSON.parse(stored));
-    }
+    fetchStarredKeywords();
   }, [playlistId]);
-  
-  const toggleStar = (keyword: string) => {
-    const newStarred = starredKeywords.includes(keyword)
-      ? starredKeywords.filter(k => k !== keyword)
-      : [...starredKeywords, keyword];
-    
-    setStarredKeywords(newStarred);
-    localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
+
+  const fetchStarredKeywords = async () => {
+    try {
+      const response = await fetch(`/api/starred?playlistId=${playlistId}`);
+      if (!response.ok) throw new Error('Failed to fetch starred keywords');
+      const data = await response.json();
+      setStarredKeywords(data.starred);
+    } catch (error) {
+      console.error('Error fetching starred keywords:', error);
+      // Fallback to localStorage for migration
+      const stored = localStorage.getItem(`starred-keywords-${playlistId}`);
+      if (stored) {
+        const localStarred = JSON.parse(stored);
+        setStarredKeywords(localStarred);
+        // Migrate to backend
+        migrateStarredToBackend(localStarred);
+      }
+    }
+  };
+
+  const migrateStarredToBackend = async (keywords: string[]) => {
+    try {
+      // Toggle each keyword to migrate it to backend
+      for (const keyword of keywords) {
+        await fetch('/api/starred', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playlistId, keyword }),
+        });
+      }
+      // Clear localStorage after successful migration
+      localStorage.removeItem(`starred-keywords-${playlistId}`);
+    } catch (error) {
+      console.error('Error migrating starred keywords:', error);
+    }
+  };
+
+  const toggleStar = async (keyword: string) => {
+    try {
+      const response = await fetch('/api/starred', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playlistId, keyword }),
+      });
+
+      if (!response.ok) throw new Error('Failed to toggle star');
+
+      const data = await response.json();
+      setStarredKeywords(data.starred);
+    } catch (error) {
+      console.error('Error toggling star:', error);
+      // Fallback to local toggle for better UX
+      const newStarred = starredKeywords.includes(keyword.toLowerCase())
+        ? starredKeywords.filter(k => k !== keyword.toLowerCase())
+        : [...starredKeywords, keyword.toLowerCase()];
+      setStarredKeywords(newStarred);
+    }
   };
   
   const deleteKeyword = async (keywordToDelete: string) => {
     if (!confirm(`Are you sure you want to delete all entries for "${keywordToDelete}"?`)) {
       return;
     }
-    
+
     try {
       // Remove from local state immediately for better UX
       const updatedPlaylist = {
@@ -62,18 +108,18 @@ export default function PlaylistDetail() {
         keywords: playlist!.keywords.filter(k => k.keyword.toLowerCase() !== keywordToDelete.toLowerCase())
       };
       setPlaylist(updatedPlaylist);
-      
+
       // Remove from starred keywords if it was starred
-      const newStarred = starredKeywords.filter(k => k.toLowerCase() !== keywordToDelete.toLowerCase());
-      setStarredKeywords(newStarred);
-      localStorage.setItem(`starred-keywords-${playlistId}`, JSON.stringify(newStarred));
-      
+      if (starredKeywords.includes(keywordToDelete.toLowerCase())) {
+        await toggleStar(keywordToDelete);
+      }
+
       // Call DELETE endpoint to mark keyword as deleted
       const response = await fetch(`/api/playlists/${playlistId}/keywords/${encodeURIComponent(keywordToDelete)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete keyword');
       }

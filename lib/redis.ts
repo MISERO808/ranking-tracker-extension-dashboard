@@ -315,3 +315,31 @@ export async function deletePlaylistNote(playlistId: string, noteId: string): Pr
 
   return true;
 }
+
+// Starred keywords operations
+export async function getStarredKeywords(playlistId: string): Promise<string[]> {
+  const redis = await getRedisClient();
+  const starredData = await redis.get(`starred:${playlistId}`);
+  return starredData ? JSON.parse(starredData) : [];
+}
+
+export async function setStarredKeywords(playlistId: string, keywords: string[]): Promise<void> {
+  const redis = await getRedisClient();
+  await redis.set(`starred:${playlistId}`, JSON.stringify(keywords));
+}
+
+export async function toggleStarredKeyword(playlistId: string, keyword: string): Promise<string[]> {
+  const redis = await getRedisClient();
+  const starred = await getStarredKeywords(playlistId);
+
+  const normalizedKeyword = keyword.toLowerCase().trim();
+  const isStarred = starred.includes(normalizedKeyword);
+
+  const newStarred = isStarred
+    ? starred.filter(k => k !== normalizedKeyword)
+    : [...starred, normalizedKeyword];
+
+  await setStarredKeywords(playlistId, newStarred);
+
+  return newStarred;
+}
