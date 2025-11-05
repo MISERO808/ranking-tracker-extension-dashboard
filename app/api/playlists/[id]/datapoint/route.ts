@@ -14,18 +14,29 @@ export async function OPTIONS() {
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const keyword = searchParams.get('keyword');
     const territory = searchParams.get('territory');
     const timestamp = searchParams.get('timestamp');
+
+    // Handle both promise and non-promise params for Next.js compatibility
+    const params = 'then' in context.params ? await context.params : context.params;
     const playlistId = params.id;
 
+    console.log(`DELETE /api/playlists/${playlistId}/datapoint - Received params:`, {
+      keyword,
+      territory,
+      timestamp,
+      playlistId
+    });
+
     if (!keyword || !territory || !timestamp) {
+      console.log(`Missing required params - keyword: ${!!keyword}, territory: ${!!territory}, timestamp: ${!!timestamp}`);
       const response = NextResponse.json(
-        { error: 'keyword, territory, and timestamp are required' },
+        { error: 'keyword, territory, and timestamp are required', received: { keyword: !!keyword, territory: !!territory, timestamp: !!timestamp } },
         { status: 400 }
       );
       Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -50,19 +61,34 @@ export async function DELETE(
 
     // Filter out the specific data point
     const originalCount = playlist.keywords.length;
+    console.log(`Original keyword count: ${originalCount}`);
+
+    // Log a few sample keywords to see what we're working with
+    console.log('Sample keywords:', playlist.keywords.slice(0, 3).map(k => ({
+      keyword: k.keyword,
+      territory: k.territory,
+      timestamp: k.timestamp
+    })));
+
     playlist.keywords = playlist.keywords.filter(k => {
-      return !(
+      const matches = (
         k.keyword.toLowerCase() === keyword.toLowerCase() &&
         k.territory.toLowerCase() === territory.toLowerCase() &&
         k.timestamp === timestamp
       );
+      if (matches) {
+        console.log('Found matching data point to delete:', k);
+      }
+      return !matches;
     });
 
     const deletedCount = originalCount - playlist.keywords.length;
+    console.log(`Deleted count: ${deletedCount}, new count: ${playlist.keywords.length}`);
 
     if (deletedCount === 0) {
+      console.log('No data point found matching criteria');
       const response = NextResponse.json(
-        { error: 'Data point not found' },
+        { error: 'Data point not found', criteria: { keyword, territory, timestamp } },
         { status: 404 }
       );
       Object.entries(corsHeaders).forEach(([key, value]) => {
