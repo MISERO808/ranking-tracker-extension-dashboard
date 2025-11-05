@@ -64,6 +64,9 @@ export interface PlaylistNote {
   id: string;
   playlistId: string;
   date: string; // ISO date string (YYYY-MM-DD)
+  keyword: string; // Keyword where note was originally added
+  territory: string; // Territory where note was originally added
+  timestamp: string; // Full ISO timestamp of the specific data point
   note: string;
   createdAt: string;
   updatedAt: string;
@@ -264,7 +267,7 @@ export async function getPlaylistNotes(playlistId: string): Promise<PlaylistNote
   return notesData ? JSON.parse(notesData) : [];
 }
 
-export async function createPlaylistNote(playlistId: string, date: string, note: string): Promise<PlaylistNote> {
+export async function createPlaylistNote(playlistId: string, date: string, keyword: string, territory: string, timestamp: string, note: string): Promise<PlaylistNote> {
   const redis = await getRedisClient();
   const notes = await getPlaylistNotes(playlistId);
 
@@ -272,6 +275,9 @@ export async function createPlaylistNote(playlistId: string, date: string, note:
     id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     playlistId,
     date,
+    keyword,
+    territory,
+    timestamp,
     note,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

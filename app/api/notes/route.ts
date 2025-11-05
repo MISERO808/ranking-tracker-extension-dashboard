@@ -56,11 +56,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { playlistId, date, note } = await request.json();
+    const { playlistId, date, keyword, territory, timestamp, note } = await request.json();
 
-    if (!playlistId || !date || !note) {
+    if (!playlistId || !date || !keyword || !territory || !timestamp || !note) {
       const response = NextResponse.json(
-        { error: 'playlistId, date, and note are required' },
+        { error: 'playlistId, date, keyword, territory, timestamp, and note are required' },
         { status: 400 }
       );
       Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -69,8 +69,8 @@ export async function POST(request: Request) {
       return response;
     }
 
-    console.log(`POST /api/notes - Creating note for playlist ${playlistId} on ${date}`);
-    const newNote = await createPlaylistNote(playlistId, date, note);
+    console.log(`POST /api/notes - Creating note for playlist ${playlistId} on ${date} at ${timestamp} (${keyword} / ${territory})`);
+    const newNote = await createPlaylistNote(playlistId, date, keyword, territory, timestamp, note);
     console.log(`POST /api/notes - Note created with id ${newNote.id}`);
 
     const response = NextResponse.json(newNote);

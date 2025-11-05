@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { PlaylistData, KeywordRanking } from '@/lib/redis';
 
 interface ChartDataPoint {
@@ -16,6 +16,9 @@ interface PlaylistNote {
   id: string;
   playlistId: string;
   date: string;
+  keyword: string;
+  territory: string;
+  timestamp: string;
   note: string;
   createdAt: string;
   updatedAt: string;
@@ -26,14 +29,14 @@ export default function KeywordDetail() {
   const router = useRouter();
   const playlistId = params.playlistId as string;
   const keyword = decodeURIComponent(params.keyword as string);
-  
+
   const [playlist, setPlaylist] = useState<PlaylistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string>('');
   const [notes, setNotes] = useState<PlaylistNote[]>([]);
-  const [showNoteModal, setShowNoteModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedDataPoint, setSelectedDataPoint] = useState<ChartDataPoint | null>(null);
   const [noteText, setNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
@@ -77,27 +80,38 @@ export default function KeywordDetail() {
 
   const handleChartClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
-      const clickedPoint = data.activePayload[0].payload;
+      const clickedPoint: ChartDataPoint = data.activePayload[0].payload;
       const clickedDate = new Date(clickedPoint.timestamp).toISOString().split('T')[0];
 
-      // Check if there's already a note for this date
-      const existingNote = notes.find(n => n.date === clickedDate);
+      // Check if there's already a note for this exact data point or date
+      const exactNote = notes.find(
+        n => n.keyword.toLowerCase() === keyword.toLowerCase() &&
+             n.territory === selectedTerritory &&
+             n.timestamp === clickedPoint.timestamp
+      );
 
-      if (existingNote) {
-        setEditingNoteId(existingNote.id);
-        setNoteText(existingNote.note);
+      const dateNote = notes.find(n => n.date === clickedDate);
+
+      if (exactNote) {
+        setEditingNoteId(exactNote.id);
+        setNoteText(exactNote.note);
+      } else if (dateNote) {
+        setEditingNoteId(dateNote.id);
+        setNoteText(dateNote.note);
       } else {
         setEditingNoteId(null);
         setNoteText('');
       }
 
-      setSelectedDate(clickedDate);
-      setShowNoteModal(true);
+      setSelectedDataPoint(clickedPoint);
+      setShowModal(true);
     }
   };
 
   const handleSaveNote = async () => {
-    if (!selectedDate || !noteText.trim()) return;
+    if (!selectedDataPoint || !noteText.trim()) return;
+
+    const clickedDate = new Date(selectedDataPoint.timestamp).toISOString().split('T')[0];
 
     try {
       if (editingNoteId) {
@@ -117,7 +131,14 @@ export default function KeywordDetail() {
         const response = await fetch('/api/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playlistId, date: selectedDate, note: noteText }),
+          body: JSON.stringify({
+            playlistId,
+            date: clickedDate,
+            keyword: keyword,
+            territory: selectedTerritory,
+            timestamp: selectedDataPoint.timestamp,
+            note: noteText
+          }),
         });
 
         if (!response.ok) throw new Error('Failed to create note');
@@ -127,6 +148,7 @@ export default function KeywordDetail() {
       }
 
       handleCloseModal();
+      fetchNotes(); // Refresh notes
     } catch (err) {
       console.error('Error saving note:', err);
       alert('Failed to save note. Please try again.');
@@ -153,9 +175,30 @@ export default function KeywordDetail() {
     }
   };
 
+  const handleDeleteDataPoint = async () => {
+    if (!selectedDataPoint) return;
+
+    if (!confirm('Are you sure you want to delete this data point? This action cannot be undone.')) return;
+
+    try {
+      const response = await fetch(
+        `/api/playlists/${playlistId}/datapoint?keyword=${encodeURIComponent(keyword)}&territory=${selectedTerritory}&timestamp=${encodeURIComponent(selectedDataPoint.timestamp)}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete data point');
+
+      handleCloseModal();
+      fetchPlaylist(); // Refresh data
+    } catch (err) {
+      console.error('Error deleting data point:', err);
+      alert('Failed to delete data point. Please try again.');
+    }
+  };
+
   const handleCloseModal = () => {
-    setShowNoteModal(false);
-    setSelectedDate(null);
+    setShowModal(false);
+    setSelectedDataPoint(null);
     setNoteText('');
     setEditingNoteId(null);
   };
@@ -188,13 +231,13 @@ export default function KeywordDetail() {
   }
 
   // Get all data for this keyword
-  const allKeywordData = playlist.keywords.filter((k: KeywordRanking) => 
+  const allKeywordData = playlist.keywords.filter((k: KeywordRanking) =>
     k.keyword.toLowerCase().trim() === keyword.toLowerCase().trim()
   );
 
   // Filter by selected territory
-  const filteredData = !selectedTerritory || selectedTerritory === '' 
-    ? allKeywordData 
+  const filteredData = !selectedTerritory || selectedTerritory === ''
+    ? allKeywordData
     : allKeywordData.filter((k: KeywordRanking) => k.territory === selectedTerritory);
 
   // Get available territories
@@ -223,16 +266,63 @@ export default function KeywordDetail() {
 
   // Calculate trend from last 5 data points
   const recentData = chartData.slice(-5);
-  const trend = recentData.length >= 2 
+  const trend = recentData.length >= 2
     ? recentData[recentData.length - 1].position - recentData[0].position
     : 0;
+
+  // Helper function to check if a data point should be lilac
+  const shouldBeLilac = (dataPoint: ChartDataPoint): boolean => {
+    const pointDate = new Date(dataPoint.timestamp).toISOString().split('T')[0];
+
+    // Check if this exact data point has a note
+    const exactNote = notes.find(
+      n => n.keyword.toLowerCase() === keyword.toLowerCase() &&
+           n.territory === selectedTerritory &&
+           n.timestamp === dataPoint.timestamp
+    );
+    if (exactNote) return true;
+
+    // Check if there's a note for this date from a different keyword
+    const dateNote = notes.find(n => n.date === pointDate);
+    if (dateNote) {
+      // Only color the first data point on that date
+      const firstPointOnDate = chartData.find(d => {
+        const d_date = new Date(d.timestamp).toISOString().split('T')[0];
+        return d_date === pointDate;
+      });
+      return firstPointOnDate?.timestamp === dataPoint.timestamp;
+    }
+
+    return false;
+  };
+
+  // Get note for a data point's date
+  const getNoteForDataPoint = (dataPoint: ChartDataPoint): PlaylistNote | undefined => {
+    const pointDate = new Date(dataPoint.timestamp).toISOString().split('T')[0];
+    return notes.find(n => n.date === pointDate);
+  };
+
+  // Calculate growth/loss for selected data point
+  const getGrowthInfo = (dataPoint: ChartDataPoint) => {
+    const index = chartData.findIndex(d => d.timestamp === dataPoint.timestamp);
+    if (index <= 0) return null;
+
+    const previousPoint = chartData[index - 1];
+    const change = previousPoint.position - dataPoint.position; // Positive = improved (went up in ranking)
+
+    return {
+      change,
+      previousPosition: previousPoint.position,
+      isImprovement: change > 0,
+      isDecline: change < 0,
+    };
+  };
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const pointDate = new Date(data.timestamp).toISOString().split('T')[0];
-      const noteForDate = notes.find(n => n.date === pointDate);
+      const note = getNoteForDataPoint(data);
 
       return (
         <div className="neu-flat p-3" style={{ background: 'rgba(232, 234, 237, 0.95)', maxWidth: '300px' }}>
@@ -247,14 +337,14 @@ export default function KeywordDetail() {
               minute: '2-digit'
             })}
           </p>
-          {noteForDate && (
+          {note && (
             <div className="mt-2 pt-2 border-t border-gray-300">
               <p className="text-xs font-semibold mb-1" style={{ color: 'var(--lilac)' }}>Note:</p>
-              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{noteForDate.note}</p>
+              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{note.note}</p>
             </div>
           )}
           <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-            Click to {noteForDate ? 'edit' : 'add'} note
+            Click for details
           </p>
         </div>
       );
@@ -265,12 +355,15 @@ export default function KeywordDetail() {
   // Create Spotify playlist search URL
   const spotifySearchUrl = `https://open.spotify.com/search/${encodeURIComponent(keyword)}/playlists`;
 
+  const growthInfo = selectedDataPoint ? getGrowthInfo(selectedDataPoint) : null;
+  const selectedNote = selectedDataPoint ? getNoteForDataPoint(selectedDataPoint) : undefined;
+
   return (
     <div className="min-h-screen py-8">
       <div className="container">
         {/* Header */}
         <div className="neu-card mb-8">
-          <Link 
+          <Link
             href={`/playlist/${playlistId}`}
             className="neu-btn mb-6 inline-flex"
           >
@@ -279,7 +372,7 @@ export default function KeywordDetail() {
             </svg>
             Back to {playlist.name}
           </Link>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">
@@ -291,7 +384,7 @@ export default function KeywordDetail() {
                 Ranking history from {playlist.name}
               </div>
             </div>
-            
+
             <a
               href={spotifySearchUrl}
               target="_blank"
@@ -309,7 +402,7 @@ export default function KeywordDetail() {
           <label htmlFor="territory-filter" className="block text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
             Filter by Territory
           </label>
-          <select 
+          <select
             id="territory-filter"
             value={selectedTerritory}
             onChange={(e) => setSelectedTerritory(e.target.value)}
@@ -329,17 +422,17 @@ export default function KeywordDetail() {
             <span className="neu-stat-value">{currentPosition ? `#${currentPosition}` : 'N/A'}</span>
             <span className="neu-stat-label">Current Position</span>
           </div>
-          
+
           <div className="neu-stat">
             <span className="neu-stat-value">#{bestPosition}</span>
             <span className="neu-stat-label">Best Position</span>
           </div>
-          
+
           <div className="neu-stat">
             <span className="neu-stat-value" style={{ color: 'var(--error)' }}>#{worstPosition}</span>
             <span className="neu-stat-label">Worst Position</span>
           </div>
-          
+
           <div className="neu-stat">
             <span className="neu-stat-value">{chartData.length}</span>
             <span className="neu-stat-label">Data Points</span>
@@ -388,7 +481,7 @@ export default function KeywordDetail() {
               <span className="emoji">📈</span> Ranking History
             </span>
           </h2>
-          
+
           {chartData.length > 0 ? (
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
@@ -415,15 +508,14 @@ export default function KeywordDetail() {
                     stroke="#1DB954"
                     strokeWidth={3}
                     dot={(props: any) => {
-                      const pointDate = new Date(props.payload.timestamp).toISOString().split('T')[0];
-                      const hasNote = notes.some(n => n.date === pointDate);
+                      const isLilac = shouldBeLilac(props.payload);
                       return (
                         <circle
                           cx={props.cx}
                           cy={props.cy}
-                          r={hasNote ? 8 : 5}
-                          fill={hasNote ? '#9333EA' : '#1DB954'}
-                          stroke={hasNote ? '#9333EA' : '#1DB954'}
+                          r={isLilac ? 8 : 5}
+                          fill={isLilac ? '#9333EA' : '#1DB954'}
+                          stroke={isLilac ? '#9333EA' : '#1DB954'}
                           strokeWidth={2}
                           style={{ cursor: 'pointer' }}
                         />
@@ -431,79 +523,6 @@ export default function KeywordDetail() {
                     }}
                     activeDot={{ r: 8, stroke: '#1DB954', strokeWidth: 2, style: { cursor: 'pointer' } }}
                   />
-                  {/* Add note markers */}
-                  {notes.map(note => {
-                    // Check if there's an exact data point for this note date
-                    const exactDataPoint = chartData.find(d => {
-                      const pointDate = new Date(d.timestamp).toISOString().split('T')[0];
-                      return pointDate === note.date;
-                    });
-
-                    if (exactDataPoint) {
-                      // Show marker at exact data point
-                      return (
-                        <ReferenceDot
-                          key={note.id}
-                          x={exactDataPoint.date}
-                          y={exactDataPoint.position}
-                          r={0}
-                          label={{
-                            value: '📝',
-                            position: 'top',
-                            fontSize: 16,
-                            style: { cursor: 'pointer' }
-                          }}
-                        />
-                      );
-                    }
-
-                    // Check if this keyword has data before and after the note date
-                    const noteDateTime = new Date(note.date + 'T00:00:00').getTime();
-                    const hasDataBefore = chartData.some(d => new Date(d.timestamp).getTime() < noteDateTime);
-                    const hasDataAfter = chartData.some(d => new Date(d.timestamp).getTime() > noteDateTime);
-
-                    if (hasDataBefore && hasDataAfter) {
-                      // Find surrounding data points for interpolation
-                      const beforePoint = chartData
-                        .filter(d => new Date(d.timestamp).getTime() < noteDateTime)
-                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-
-                      const afterPoint = chartData
-                        .filter(d => new Date(d.timestamp).getTime() > noteDateTime)
-                        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[0];
-
-                      if (beforePoint && afterPoint) {
-                        // Interpolate position
-                        const interpolatedPosition = Math.round(
-                          (beforePoint.position + afterPoint.position) / 2
-                        );
-
-                        const noteDate = new Date(note.date + 'T00:00:00').toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });
-
-                        return (
-                          <ReferenceDot
-                            key={note.id}
-                            x={beforePoint.date}
-                            y={interpolatedPosition}
-                            r={0}
-                            label={{
-                              value: '📝',
-                              position: 'top',
-                              fontSize: 16,
-                              style: { cursor: 'pointer' }
-                            }}
-                          />
-                        );
-                      }
-                    }
-
-                    return null;
-                  })}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -514,79 +533,117 @@ export default function KeywordDetail() {
           )}
         </div>
 
-        {/* Note Modal */}
-        {showNoteModal && (
+        {/* Data Point Detail Modal */}
+        {showModal && selectedDataPoint && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={handleCloseModal}
           >
             <div
-              className="neu-card max-w-md w-full mx-4"
+              className="neu-card max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {editingNoteId ? 'Edit Note' : 'Add Note'}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Data Point Details
                 </h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-2xl leading-none"
+                  className="text-3xl leading-none"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   &times;
                 </button>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Date: {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </label>
-              </div>
+              {/* Data Point Info */}
+              <div className="mb-6 p-4 neu-flat rounded-lg">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Position</p>
+                    <p className="text-3xl font-bold" style={{ color: 'var(--lilac)' }}>
+                      #{selectedDataPoint.position}
+                    </p>
+                  </div>
+                  {growthInfo && (
+                    <div>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Change</p>
+                      <p className={`text-2xl font-bold ${growthInfo.isImprovement ? 'text-green-600' : growthInfo.isDecline ? 'text-red-600' : ''}`}>
+                        {growthInfo.change > 0 && '↑ '}
+                        {growthInfo.change < 0 && '↓ '}
+                        {growthInfo.change === 0 ? '→ No change' : `${Math.abs(growthInfo.change)} positions`}
+                      </p>
+                      {growthInfo.change !== 0 && (
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                          from #{growthInfo.previousPosition}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-              <div className="mb-6">
-                <label htmlFor="note-text" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Note
-                </label>
-                <textarea
-                  id="note-text"
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  className="neu-input w-full h-32 resize-none"
-                  placeholder="e.g., Started meta campaign, Launched influencer collaboration, etc."
-                  autoFocus
-                />
-              </div>
+                <div className="border-t pt-3" style={{ borderColor: 'var(--text-secondary)' }}>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Timestamp</p>
+                  <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {new Date(selectedDataPoint.timestamp).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    })}
+                  </p>
+                </div>
 
-              <div className="flex gap-3">
                 <button
-                  onClick={handleSaveNote}
-                  className="neu-btn-primary flex-1"
-                  disabled={!noteText.trim()}
+                  onClick={handleDeleteDataPoint}
+                  className="neu-btn w-full mt-4"
+                  style={{ color: 'var(--error)' }}
                 >
-                  {editingNoteId ? 'Update Note' : 'Save Note'}
+                  Delete This Data Point
                 </button>
+              </div>
 
-                {editingNoteId && (
+              {/* Notes Section */}
+              <div className="border-t pt-6" style={{ borderColor: 'var(--text-secondary)' }}>
+                <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  Note for this date
+                  <span className="text-xs ml-2 font-normal" style={{ color: 'var(--text-secondary)' }}>
+                    (appears on all keywords)
+                  </span>
+                </h4>
+
+                <div className="mb-4">
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    className="neu-input w-full h-32 resize-none"
+                    placeholder="e.g., Started meta campaign, Launched influencer collaboration, etc."
+                    autoFocus={!selectedNote}
+                  />
+                </div>
+
+                <div className="flex gap-3">
                   <button
-                    onClick={handleDeleteNote}
-                    className="neu-btn"
-                    style={{ color: 'var(--error)' }}
+                    onClick={handleSaveNote}
+                    className="neu-btn-primary flex-1"
+                    disabled={!noteText.trim()}
                   >
-                    Delete
+                    {editingNoteId ? 'Update Note' : 'Save Note'}
                   </button>
-                )}
 
-                <button
-                  onClick={handleCloseModal}
-                  className="neu-btn"
-                >
-                  Cancel
-                </button>
+                  {editingNoteId && (
+                    <button
+                      onClick={handleDeleteNote}
+                      className="neu-btn"
+                      style={{ color: 'var(--error)' }}
+                    >
+                      Delete Note
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
