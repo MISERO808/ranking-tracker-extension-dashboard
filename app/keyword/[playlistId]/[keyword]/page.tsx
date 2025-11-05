@@ -181,23 +181,18 @@ export default function KeywordDetail() {
     if (!confirm('Are you sure you want to delete this data point? This action cannot be undone.')) return;
 
     try {
-      const url = `/api/playlists/${playlistId}/datapoint?keyword=${encodeURIComponent(keyword)}&territory=${selectedTerritory}&timestamp=${encodeURIComponent(selectedDataPoint.timestamp)}`;
-      console.log('DELETE request URL:', url);
-
-      const response = await fetch(url, { method: 'DELETE' });
-
-      console.log('DELETE response status:', response.status);
+      const response = await fetch(
+        `/api/playlists/${playlistId}?keyword=${encodeURIComponent(keyword)}&territory=${selectedTerritory}&timestamp=${encodeURIComponent(selectedDataPoint.timestamp)}`,
+        { method: 'DELETE' }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('DELETE error response:', errorData);
-        throw new Error(errorData.error || errorData.details || 'Failed to delete data point');
+        throw new Error(errorData.error || 'Failed to delete data point');
       }
 
       const result = await response.json();
-      console.log('DELETE success:', result);
-
-      alert(`Data point deleted successfully! Removed ${result.deletedCount} point(s).`);
+      alert(`Data point deleted successfully!`);
       handleCloseModal();
       fetchPlaylist(); // Refresh data
     } catch (err) {
