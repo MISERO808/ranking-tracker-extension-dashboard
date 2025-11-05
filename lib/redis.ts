@@ -60,6 +60,15 @@ export interface KeywordHistory {
   }>;
 }
 
+export interface PlaylistNote {
+  id: string;
+  playlistId: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Redis operations
 // Track deleted keywords
 export async function getDeletedKeywords(playlistId: string): Promise<Set<string>> {
@@ -238,12 +247,65 @@ export async function getKeywordHistory(playlistId: string, keyword: string, ter
   const redis = await getRedisClient();
   const key = `history:${playlistId}:${keyword}:${territory}`;
   const historyData = await redis.lRange(key, 0, -1);
-  
+
   const rankings = historyData.map(data => JSON.parse(data)).reverse();
-  
+
   return {
     keyword,
     territory,
     rankings
   };
+}
+
+// Notes operations
+export async function getPlaylistNotes(playlistId: string): Promise<PlaylistNote[]> {
+  const redis = await getRedisClient();
+  const notesData = await redis.get(`notes:${playlistId}`);
+  return notesData ? JSON.parse(notesData) : [];
+}
+
+export async function createPlaylistNote(playlistId: string, date: string, note: string): Promise<PlaylistNote> {
+  const redis = await getRedisClient();
+  const notes = await getPlaylistNotes(playlistId);
+
+  const newNote: PlaylistNote = {
+    id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    playlistId,
+    date,
+    note,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  notes.push(newNote);
+  await redis.set(`notes:${playlistId}`, JSON.stringify(notes));
+
+  return newNote;
+}
+
+export async function updatePlaylistNote(playlistId: string, noteId: string, noteText: string): Promise<PlaylistNote | null> {
+  const redis = await getRedisClient();
+  const notes = await getPlaylistNotes(playlistId);
+
+  const noteIndex = notes.findIndex(n => n.id === noteId);
+  if (noteIndex === -1) return null;
+
+  notes[noteIndex].note = noteText;
+  notes[noteIndex].updatedAt = new Date().toISOString();
+
+  await redis.set(`notes:${playlistId}`, JSON.stringify(notes));
+
+  return notes[noteIndex];
+}
+
+export async function deletePlaylistNote(playlistId: string, noteId: string): Promise<boolean> {
+  const redis = await getRedisClient();
+  const notes = await getPlaylistNotes(playlistId);
+
+  const filteredNotes = notes.filter(n => n.id !== noteId);
+  if (filteredNotes.length === notes.length) return false;
+
+  await redis.set(`notes:${playlistId}`, JSON.stringify(filteredNotes));
+
+  return true;
 }
