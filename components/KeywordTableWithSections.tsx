@@ -198,13 +198,17 @@ export default function KeywordTableWithSections({
     return filtered;
   }, [keywords, selectedCountryFilter, searchTerm]);
 
-  // Separate starred and regular keywords
-  const starredKeywordsList = processedKeywords.filter(k => 
+  // Separate starred, #1 rankings, and regular keywords
+  const starredKeywordsList = processedKeywords.filter(k =>
     starredKeywords.some(starred => starred.toLowerCase() === k.normalizedKeyword)
   );
-  const regularKeywords = processedKeywords.filter(k => 
+
+  const nonStarredKeywords = processedKeywords.filter(k =>
     !starredKeywords.some(starred => starred.toLowerCase() === k.normalizedKeyword)
   );
+
+  const numberOneKeywords = nonStarredKeywords.filter(k => k.position === 1);
+  const regularKeywords = nonStarredKeywords.filter(k => k.position !== 1);
 
   // Sort function
   const sortKeywords = (keywordList: DeduplicatedKeyword[]) => {
@@ -229,6 +233,7 @@ export default function KeywordTableWithSections({
 
   const sortedStarredKeywords = sortKeywords(starredKeywordsList);
   const sortedRegularKeywords = sortKeywords(regularKeywords);
+  const sortedNumberOneKeywords = sortKeywords(numberOneKeywords);
 
   if (keywords.length === 0) {
     return (
@@ -609,7 +614,7 @@ export default function KeywordTableWithSections({
       )}
 
       {/* All Keywords Section */}
-      <div>
+      <div className={sortedNumberOneKeywords.length > 0 ? 'mb-6' : ''}>
         <h3 className="text-lg font-semibold mb-3">
           {sortedStarredKeywords.length > 0 ? 'All Keywords' : 'Keywords'}
         </h3>
@@ -617,14 +622,14 @@ export default function KeywordTableWithSections({
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--shadow-color)' }}>
-                <th 
+                <th
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
                   style={{ color: 'var(--text-secondary)', width: '15%' }}
                   onClick={() => handleHeaderClick('position')}
                 >
                   Position {sortField === 'position' && getSortIcon('position')}
                 </th>
-                <th 
+                <th
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
                   style={{ color: 'var(--text-secondary)', width: '35%' }}
                   onClick={() => handleHeaderClick('keyword')}
@@ -634,7 +639,7 @@ export default function KeywordTableWithSections({
                 <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
                   Territories
                 </th>
-                <th 
+                <th
                   className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
                   style={{ color: 'var(--text-secondary)', width: '20%' }}
                   onClick={() => handleHeaderClick('updated')}
@@ -652,6 +657,54 @@ export default function KeywordTableWithSections({
           </table>
         </div>
       </div>
+
+      {/* #1 Rankings Section */}
+      {sortedNumberOneKeywords.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span>🏆</span>
+            #1 Rankings
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--shadow-color)' }}>
+                  <th
+                    className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
+                    style={{ color: 'var(--text-secondary)', width: '15%' }}
+                    onClick={() => handleHeaderClick('position')}
+                  >
+                    Position{getSortIcon('position')}
+                  </th>
+                  <th
+                    className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
+                    style={{ color: 'var(--text-secondary)', width: '35%' }}
+                    onClick={() => handleHeaderClick('keyword')}
+                  >
+                    Keyword{getSortIcon('keyword')}
+                  </th>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
+                    Territories
+                  </th>
+                  <th
+                    className="text-left py-2 px-4 cursor-pointer hover:opacity-70"
+                    style={{ color: 'var(--text-secondary)', width: '20%' }}
+                    onClick={() => handleHeaderClick('updated')}
+                  >
+                    Last Updated{getSortIcon('updated')}
+                  </th>
+                  <th className="text-left py-2 px-4" style={{ color: 'var(--text-secondary)', width: '15%' }}>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedNumberOneKeywords.map(renderKeywordRow)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
