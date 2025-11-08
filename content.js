@@ -258,15 +258,33 @@ async function processSearchResults(data) {
   // Get watched playlists from storage
   const { watchedPlaylists = {} } = await chrome.storage.local.get('watchedPlaylists');
   const watchedIds = Object.keys(watchedPlaylists);
-  
+
   if (watchedIds.length === 0) {
     console.log('[Spotify Tracker] No playlists being watched');
     return;
   }
-  
-  // Get ranking history to check for changes
-  const { rankingHistory = [] } = await chrome.storage.local.get('rankingHistory');
-  
+
+  // Get dashboard URL from settings
+  const { dashboardUrl = 'https://spotify-tracker-extension-dashboard.vercel.app' } = await chrome.storage.local.get('dashboardUrl');
+
+  // Fetch trend data from dashboard for all watched playlists
+  const trendDataByPlaylist = {};
+  for (const playlistId of watchedIds) {
+    try {
+      const response = await fetch(`${dashboardUrl}/api/playlists/${playlistId}/trends`);
+      if (response.ok) {
+        const { trends } = await response.json();
+        trendDataByPlaylist[playlistId] = trends || [];
+      } else {
+        console.log(`[Spotify Tracker] Failed to fetch trends for ${playlistId}`);
+        trendDataByPlaylist[playlistId] = [];
+      }
+    } catch (error) {
+      console.log(`[Spotify Tracker] Error fetching trends for ${playlistId}:`, error);
+      trendDataByPlaylist[playlistId] = [];
+    }
+  }
+
   // Find our playlists in ALL search results
   const foundRankings = [];
   const overlayData = [];
@@ -298,42 +316,28 @@ async function processSearchResults(data) {
       const sessionKey = `${data.keyword}-${playlistId}-${data.territory}-${minute}`;
       
       // Build overlay data for ALL watched playlists (should always show)
-      // IMPORTANT: Filter by territory for accurate comparison
-      const historicalData = rankingHistory
-        .filter(r => 
-          r.playlistId === playlistId && 
-          r.keyword === data.keyword &&
-          r.territory === data.territory  // Only compare within same territory!
-        )
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
+      // Get trend data from dashboard for this keyword+territory
+      const trends = trendDataByPlaylist[playlistId] || [];
+      const trendForKeyword = trends.find(t =>
+        t.keyword.toLowerCase() === data.keyword.toLowerCase() &&
+        t.territory.toLowerCase() === data.territory.toLowerCase()
+      );
+
       overlayData.push({
         playlistId,
         playlistName: item.name,
         position: item.position,
         territory: data.territory,
-        previousPosition: historicalData[0]?.position || null,
-        bestPosition: historicalData.length > 0 
-          ? Math.min(...historicalData.map(h => h.position), item.position)
-          : item.position,
-        isNew: historicalData.length === 0
+        previousPosition: trendForKeyword?.previousPosition || null,
+        bestPosition: item.position, // We'll calculate this from all data if needed
+        isNew: !trendForKeyword || trendForKeyword.previousPosition === null
       });
       
       // Only save once per search session (avoid duplicates in same search)
       if (!currentSearchSession.has(sessionKey)) {
-        // Find previous rankings IN THE SAME TERRITORY
-        const previousRankings = rankingHistory
-          .filter(r => 
-            r.playlistId === playlistId && 
-            r.keyword === data.keyword &&
-            r.territory === data.territory  // Territory-specific comparison
-          )
-          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-        const lastRanking = previousRankings[0];
-        const bestRanking = previousRankings.reduce((best, current) => 
-          (!best || current.position < best.position) ? current : best, null);
-        
+        // Use trend data from dashboard for previous position
+        const previousPosition = trendForKeyword?.previousPosition || null;
+
         // Always save the new ranking (for historical tracking)
         foundRankings.push({
           playlistId,
@@ -348,11 +352,11 @@ async function processSearchResults(data) {
           userId: data.userId || 'unknown',
           sessionId: data.sessionId,
           id: `${playlistId}-${data.keyword}-${data.territory}-${Date.now()}`,
-          previousPosition: lastRanking?.position || null,
-          bestPosition: bestRanking?.position || item.position,
-          isImprovement: lastRanking ? item.position < lastRanking.position : null
+          previousPosition: previousPosition,
+          bestPosition: item.position, // Dashboard will track best position
+          isImprovement: previousPosition ? item.position < previousPosition : null
         });
-        
+
         currentSearchSession.add(sessionKey);
       }
       
