@@ -14,45 +14,48 @@ export async function GET(
     }
 
     // Group keywords by keyword+territory
-    const trendData: {
-      [key: string]: {
+    const keywordGroups: {
+      [key: string]: Array<{
         keyword: string;
         territory: string;
-        currentPosition: number;
-        previousPosition: number | null;
+        position: number;
         timestamp: string;
-        previousTimestamp: string | null;
-      };
+      }>;
     } = {};
 
-    // Sort all keywords by timestamp (most recent first)
-    const sortedKeywords = [...playlist.keywords].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    // Process each keyword to get current and previous position
-    sortedKeywords.forEach((ranking) => {
+    // Group all rankings by keyword+territory
+    playlist.keywords.forEach((ranking) => {
       const key = `${ranking.keyword.toLowerCase()}-${ranking.territory.toLowerCase()}`;
-
-      if (!trendData[key]) {
-        // This is the most recent ranking (current position)
-        trendData[key] = {
-          keyword: ranking.keyword,
-          territory: ranking.territory,
-          currentPosition: ranking.position,
-          previousPosition: null,
-          timestamp: ranking.timestamp,
-          previousTimestamp: null,
-        };
-      } else if (trendData[key].previousPosition === null) {
-        // This is the second most recent (previous position)
-        trendData[key].previousPosition = ranking.position;
-        trendData[key].previousTimestamp = ranking.timestamp;
+      if (!keywordGroups[key]) {
+        keywordGroups[key] = [];
       }
+      keywordGroups[key].push({
+        keyword: ranking.keyword,
+        territory: ranking.territory,
+        position: ranking.position,
+        timestamp: ranking.timestamp,
+      });
     });
 
-    // Convert to array format
-    const trends = Object.values(trendData);
+    // For each group, get the two most recent rankings
+    const trends = Object.values(keywordGroups).map((rankings) => {
+      // Sort by timestamp (most recent first)
+      const sorted = rankings.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      const current = sorted[0];
+      const previous = sorted[1];
+
+      return {
+        keyword: current.keyword,
+        territory: current.territory,
+        currentPosition: current.position,
+        previousPosition: previous?.position || null,
+        timestamp: current.timestamp,
+        previousTimestamp: previous?.timestamp || null,
+      };
+    });
 
     return NextResponse.json({ trends });
   } catch (error) {
