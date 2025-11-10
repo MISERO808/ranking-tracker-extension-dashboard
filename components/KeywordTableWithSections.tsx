@@ -375,10 +375,10 @@ export default function KeywordTableWithSections({
     return <span style={{ marginLeft: '4px' }}>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const downloadCSV = (mode: 'current' | 'all') => {
+  const downloadCSV = (mode: 'current' | 'all' | 'history') => {
     let csvData: any[] = [];
     let filename = '';
-    
+
     if (mode === 'current') {
       // Export only current territory (what's visible)
       csvData = processedKeywords.map(keyword => ({
@@ -396,33 +396,33 @@ export default function KeywordTableWithSections({
         Change: keyword.change || 0
       }));
       filename = `keywords-${playlistId}-${selectedCountryFilter || 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
-    } else {
+    } else if (mode === 'all') {
       // Export all territories with latest ranking for each
       const allTerritoryData: any[] = [];
-      
+
       // Group keywords by normalized keyword text
       const keywordGroups = keywords.reduce((acc, ranking) => {
         const normalizedKey = ranking.keyword.toLowerCase().trim();
         const territory = ranking.territory?.toLowerCase().trim();
-        
+
         // Skip invalid territories
         if (!territory || territory === 'unknown' || territory.length !== 2) {
           return acc;
         }
-        
+
         if (!acc[normalizedKey]) {
           acc[normalizedKey] = {};
         }
-        
+
         // Keep only the most recent ranking for each territory
-        if (!acc[normalizedKey][territory] || 
+        if (!acc[normalizedKey][territory] ||
             new Date(ranking.timestamp) > new Date(acc[normalizedKey][territory].timestamp)) {
           acc[normalizedKey][territory] = ranking;
         }
-        
+
         return acc;
       }, {} as { [keyword: string]: { [territory: string]: KeywordRanking } });
-      
+
       // Flatten into rows
       Object.entries(keywordGroups).forEach(([normalizedKey, territories]) => {
         Object.entries(territories).forEach(([territory, ranking]) => {
@@ -440,15 +440,49 @@ export default function KeywordTableWithSections({
           });
         });
       });
-      
+
       // Sort by keyword, then territory
       csvData = allTerritoryData.sort((a, b) => {
         const keywordCompare = a.Keyword.localeCompare(b.Keyword);
         if (keywordCompare !== 0) return keywordCompare;
         return a.Territory.localeCompare(b.Territory);
       });
-      
+
       filename = `keywords-${playlistId}-all-territories-${new Date().toISOString().split('T')[0]}.csv`;
+    } else {
+      // Export ALL historical data for ALL keywords and territories
+      csvData = keywords
+        .filter(ranking => {
+          const territory = ranking.territory?.toLowerCase().trim();
+          // Skip invalid territories
+          return territory && territory !== 'unknown' && territory.length === 2;
+        })
+        .sort((a, b) => {
+          // Sort by keyword, then territory, then timestamp
+          const keywordCompare = a.keyword.localeCompare(b.keyword);
+          if (keywordCompare !== 0) return keywordCompare;
+
+          const territoryCompare = a.territory.localeCompare(b.territory);
+          if (territoryCompare !== 0) return territoryCompare;
+
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        })
+        .map(ranking => ({
+          Keyword: ranking.keyword,
+          Territory: ranking.territory.toUpperCase(),
+          Position: ranking.position,
+          'Date/Time': new Date(ranking.timestamp).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }),
+          Timestamp: ranking.timestamp
+        }));
+
+      filename = `keywords-${playlistId}-all-history-${new Date().toISOString().split('T')[0]}.csv`;
     }
     
     if (csvData.length === 0) {
@@ -531,7 +565,7 @@ export default function KeywordTableWithSections({
             </button>
             
             {showCsvOptions && (
-              <div className="absolute right-0 mt-2 w-48 neu-card py-2 z-10">
+              <div className="absolute right-0 mt-2 w-56 neu-card py-2 z-10">
                 <button
                   onClick={() => downloadCSV('current')}
                   className="w-full px-4 py-2 text-left hover:bg-opacity-10 hover:bg-white transition-colors"
@@ -550,6 +584,16 @@ export default function KeywordTableWithSections({
                   <div className="font-medium">All Territories</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                     Latest rankings for all countries
+                  </div>
+                </button>
+                <button
+                  onClick={() => downloadCSV('history')}
+                  className="w-full px-4 py-2 text-left hover:bg-opacity-10 hover:bg-white transition-colors mt-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <div className="font-medium">All Historical Data</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    Complete ranking history for all keywords
                   </div>
                 </button>
               </div>

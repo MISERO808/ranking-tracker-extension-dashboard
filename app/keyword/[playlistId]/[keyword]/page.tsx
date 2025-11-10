@@ -208,6 +208,77 @@ export default function KeywordDetail() {
     setEditingNoteId(null);
   };
 
+  const downloadCSV = () => {
+    if (chartData.length === 0) {
+      alert('No data available to export');
+      return;
+    }
+
+    // Prepare CSV data
+    const csvData = chartData.map((dataPoint, index) => {
+      const pointDate = new Date(dataPoint.timestamp).toISOString().split('T')[0];
+      const note = notes.find(n => n.date === pointDate);
+
+      // Calculate change from previous
+      let change = 'N/A';
+      if (index > 0) {
+        const previousPosition = chartData[index - 1].position;
+        const positionChange = previousPosition - dataPoint.position;
+        if (positionChange > 0) {
+          change = `+${positionChange}`; // Improved (moved up in ranking)
+        } else if (positionChange < 0) {
+          change = `${positionChange}`; // Declined (moved down in ranking)
+        } else {
+          change = '0';
+        }
+      }
+
+      return {
+        'Date/Time': new Date(dataPoint.timestamp).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }),
+        'Position': dataPoint.position,
+        'Territory': selectedTerritory.toUpperCase(),
+        'Change': change,
+        'Notes': note?.note || ''
+      };
+    });
+
+    // Convert to CSV format
+    const headers = Object.keys(csvData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row =>
+        headers.map(header => {
+          const value = row[header as keyof typeof row];
+          const stringValue = String(value);
+          // Escape commas and quotes
+          return stringValue.includes(',') || stringValue.includes('"')
+            ? `"${stringValue.replace(/"/g, '""')}"`
+            : stringValue;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ranking-history-${keyword.replace(/[^a-z0-9]/gi, '-')}-${selectedTerritory}-${playlistId}-${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen py-8">
@@ -390,15 +461,28 @@ export default function KeywordDetail() {
               </div>
             </div>
 
-            <a
-              href={spotifySearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="neu-btn"
-              style={{ color: 'var(--lilac)', textDecoration: 'none' }}
-            >
-              Search Playlists on Spotify
-            </a>
+            <div className="flex gap-3">
+              <button
+                onClick={downloadCSV}
+                className="neu-btn"
+                disabled={chartData.length === 0}
+              >
+                <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download CSV
+              </button>
+
+              <a
+                href={spotifySearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="neu-btn"
+                style={{ color: 'var(--lilac)', textDecoration: 'none' }}
+              >
+                Search Playlists on Spotify
+              </a>
+            </div>
           </div>
         </div>
 
